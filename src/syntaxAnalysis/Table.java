@@ -16,6 +16,8 @@ class Table {
 		return blockList.get(no);
 	}
 
+	// 这里由于涉及到层级问题
+	// 函数调函数，函数调全局，全局调全局
 	Offset getOffset(String name, int no) {
 		// 已经到全局数据了
 		if (no == 0) {
@@ -30,10 +32,9 @@ class Table {
 			}
 			// 找不到，在父Block中查找
 			else {
-				getOffset(name, block.fatherNo);
+				return getOffset(name, block.fatherNo);
 			}
 		}
-		return null;
 	}
 
 }

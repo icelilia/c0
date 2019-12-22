@@ -31,6 +31,13 @@ public class SyntaxAnalysis {
 	// 栈偏移
 	private int offset;
 
+	// 需要回填的jmp语句的index
+	private int jmp;
+	// stm1的index
+	private int label1;
+	// stm2的index
+	private int label2;
+
 	// 指令文本
 	private Text text;
 	// 输出文件列表
@@ -133,10 +140,11 @@ public class SyntaxAnalysis {
 	// <C0-program> ::= {<variable-declaration>}{<function-definition>}
 	private int analyseC0Program() {
 		// {<variable-declaration>}
-		// 初始化
+		// 为全局常、变量新建一个Block，编号为0，父编号为-1
 		block = new Block(0, -1);
 		table.addBlock(block);
-		text = new Text();
+		// 为全局常、变量的初始化代码新建代码块
+		text = new Text("全局"); // 用中文当名字，防止和后面的函数重名
 		output.addText(text);
 		while (true) {
 			int res = analyseVarOrFunc();
@@ -270,6 +278,7 @@ public class SyntaxAnalysis {
 		if (token.getType() == TokenType.ID) {
 			String name = token.getValue();
 			// 查找是否有重定义
+			// 注意，重定义只在本块中查找，不向上递归
 			if (block.containsKey(name)) {
 				Err.error(ErrEnum.ID_REDECL_ERR);
 				return -2;
@@ -334,6 +343,7 @@ public class SyntaxAnalysis {
 		if (token.getType() == TokenType.ID) {
 			String name = token.getValue();
 			// 查找是否有重定义
+			// 同样，只在本块中查找
 			if (block.containsKey(name)) {
 				Err.error(ErrEnum.ID_REDECL_ERR);
 				return -2;
@@ -343,14 +353,14 @@ public class SyntaxAnalysis {
 			if (token == null) {
 				// 未初始化占位符
 				text.addCode("ipush", "0", "");
-				block.put(1, name, offset++);
+				block.put(-1, name, offset++);
 				return 1;
 			}
 			if (token.getType() != TokenType.E) {
 				reToken();
 				// 未初始化占位符
 				text.addCode("ipush", "0", "");
-				block.put(1, name, offset++);
+				block.put(-1, name, offset++);
 				return 1;
 			}
 			// 显式初始化
@@ -528,8 +538,14 @@ public class SyntaxAnalysis {
 			String name = token.getValue();
 			// 获得栈偏移
 			Offset off = table.getOffset(name, no);
+			// 先看是否有这个标识符
 			if (off.offset == null) {
-				Err.error(ErrEnum.UNINIT_ERR);
+				Err.error(ErrEnum.ID_UNDECL_ERR);
+				return -2;
+			}
+			// 再看是否已初始化
+			if (table.getBlock(no).isUnInit(name)) {
+				Err.error(ErrEnum.VAR_UNINIT_ERR);
 				return -2;
 			}
 			// level = 1
@@ -584,12 +600,13 @@ public class SyntaxAnalysis {
 				}
 				// 函数表中添加该函数
 				funcTable.put(name, null);
-				output.addText(text);
-				text = new Text();
-				output.addText(text);
 				int no = NO++;
+				// 这里将参数当作函数中最外层的一个块
+				// 所以参数块的父块一定是全局块0
 				block = new Block(no, 0);
 				table.addBlock(block);
+				text = new Text(name);
+				output.addText(text);
 				offset = 0;
 				// 开始分析参数列表
 				// 注意，参数也算作局部常、变量
@@ -707,7 +724,7 @@ public class SyntaxAnalysis {
 				return -2;
 			}
 			if (token.getType() == TokenType.INT) {
-				// 参数列表中添加参数
+				// 参数列表中添加参数类型
 				paraList.add(TokenType.INT);
 				token = getToken();
 				if (token == null) {
@@ -750,6 +767,7 @@ public class SyntaxAnalysis {
 					return -2;
 				}
 				// 传入参数需要仔细考虑
+				// 这里参数一定是会被初始化的
 				block.put(1, name, offset++);
 				return 1;
 			}
@@ -795,9 +813,10 @@ public class SyntaxAnalysis {
 			// 回退block
 			block = table.getBlock(block.fatherNo);
 			return 1;
+		} else {
+			reToken();
+			return -1;
 		}
-		reToken();
-		return -1;
 	}
 
 	// <statement-seq> ::= {<statement>}
@@ -821,23 +840,9 @@ public class SyntaxAnalysis {
 	// |<function-call>';'
 	// |';'
 	private int analyseStatement(int no) {
-		// 这里存在隐性递归
-		// 用预读来判断
-		token = getToken();
-		if (token == null) {
-			return 0;
-		}
-		if (token.getType() == TokenType.LLB) {
-			reToken();
-			if (analyseCompoundStatement(no) == 1) {
-				return 1;
-			}
-		} else {
-			reToken();
-			// 调试用返回
-			return -1;
-		}
-		if (analyseConditionStatement(no) == 1) {
+		if (analyseCompoundStatement(no) == 1) {
+			return 1;
+		} else if (analyseConditionStatement(no) == 1) {
 			return 1;
 		} else if (analyseLoopStatement(no) == 1) {
 			return 1;
@@ -895,25 +900,46 @@ public class SyntaxAnalysis {
 				Err.error(ErrEnum.RSB_ERR);
 				return -2;
 			}
-			// <statement>
+			// <statement> stm1
 			if (analyseStatement(no) != 1) {
 				Err.error(ErrEnum.FUNC_STATMENT_ERR);
 				return -2;
 			}
-			// 'else'
 			token = getToken();
 			if (token == null) {
+				// 这里求label1的位置
+				label1 = text.getIndex() + 1;
+				// 回填jcond指令
+				text.reWrite(jmp, "", new Integer(label1).toString(), "");
 				return 1;
 			}
 			if (token.getType() != TokenType.ELSE) {
 				reToken();
+				// 这里求label1的位置
+				label1 = text.getIndex() + 1;
+				// 回填jcond指令
+				text.reWrite(jmp, "", new Integer(label1).toString(), "");
 				return 1;
 			}
-			// <statement>
+			// 'else'
+			// 先加一条无条件跳转指令
+			// label2先置空
+			text.addCode("jmp", "", "");
+			// 再求label1的位置
+			label1 = text.getIndex() + 1;
+			// 回填第一个jcond指令
+			text.reWrite(jmp, "", new Integer(label1).toString(), "");
+			// 记录第二个jmp指令的位置
+			jmp = text.getIndex();
+			// <statement> stm2
 			if (analyseStatement(no) != 1) {
 				Err.error(ErrEnum.FUNC_STATMENT_ERR);
 				return -2;
 			}
+			// 求label2的位置
+			label2 = text.getIndex() + 1;
+			// 回填第二个jmp指令
+			text.reWrite(jmp, "", new Integer(label2).toString(), "");
 			return 1;
 		}
 		reToken();
@@ -934,13 +960,41 @@ public class SyntaxAnalysis {
 					Err.error(ErrEnum.FUNC_STATMENT_ERR);
 					return -2;
 				}
-				// switch (type) {
-				// case L:
-				// text.addCode("isub", "", "");
-				// }
+				text.addCode("isub", "", "");
+				switch (type) {
+				case L:
+					text.addCode("jge", "", "");
+					break;
+				case LE:
+					text.addCode("jg", "", "");
+					break;
+				case G:
+					text.addCode("jle", "", "");
+					break;
+				case GE:
+					text.addCode("jl", "", "");
+					break;
+				case UE:
+					text.addCode("je", "", "");
+					break;
+				case EE:
+					text.addCode("jne", "", "");
+					break;
+				default:
+					Err.error(ErrEnum.SP_ERR);
+					break;
+				}
+				jmp = text.getIndex();
+				return 1;
 			} else {
 				reToken();
+				// <condition> ::= <expression>
+				// 现在栈顶即是<expression>
+				// 跳转至stm2
+				// 暂时先不写label
 				text.addCode("je", "", "");
+				// 记录jmp语句的位置，随后回填
+				jmp = text.getIndex();
 				return 1;
 			}
 		}
@@ -948,26 +1002,26 @@ public class SyntaxAnalysis {
 	}
 
 	private int analyseLoopStatement(int no) {
-		return 1;
+		return -1;
 	}
 
 	private int analyseJumpStatement(int no) {
-		return 1;
+		return -1;
 	}
 
 	private int analysePrintStatement(int no) {
-		return 1;
+		return -1;
 	}
 
 	private int analyseScanStatement(int no) {
-		return 1;
+		return -1;
 	}
 
 	private int analyseAssignmentExpression(int no) {
-		return 1;
+		return -1;
 	}
 
 	private int analyseFunctionCall(int no) {
-		return 1;
+		return -1;
 	}
 }

@@ -33,9 +33,9 @@ public enum ErrEnum {
 
 	EXP_ERR, // 表达式中存在错误
 
-	UNDECL_ERR, // 标识符未定义
+	ID_UNDECL_ERR, // 标识符未定义
 
-	UNINIT_ERR, // 使用了未初始化的变量
+	VAR_UNINIT_ERR, // 使用了未初始化的变量
 
 	FUNC_REDECL_ERR, // 函数重定义
 

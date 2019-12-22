@@ -68,11 +68,11 @@ public class Err {
 			System.out.println("表达式中存在错误");
 			System.exit(-1);
 			break;
-		case UNDECL_ERR:
+		case ID_UNDECL_ERR:
 			System.out.println("标识符未定义");
 			System.exit(-1);
 			break;
-		case UNINIT_ERR:
+		case VAR_UNINIT_ERR:
 			System.out.println("使用了未初始化的变量");
 			System.exit(-1);
 			break;
