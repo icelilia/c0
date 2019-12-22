@@ -37,4 +37,25 @@ class Table {
 		}
 	}
 
+	// 返回该标识符类型
+	// 0：常量
+	// 1：已初始化变量
+	// -1：未初始化变量
+	Integer getKind(String name, int no) {
+		if (no == 0) {
+			Block block = blockList.get(no);
+			return block.getKind(name);
+		} else {
+			// 先在本Block中查找
+			Block block = blockList.get(no);
+			Integer kind = block.getKind(name);
+			if (kind != null) {
+				return kind;
+			}
+			// 找不到，在父Block中查找
+			else {
+				return getKind(name, block.fatherNo);
+			}
+		}
+	}
 }

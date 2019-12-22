@@ -52,6 +52,10 @@ public class Err {
 			System.out.println("常量未被显式地初始化");
 			System.exit(-1);
 			break;
+		case CONST_AS_ERR:
+			System.out.println("常量无法被再次赋值");
+			System.exit(-1);
+			break;
 		case VAR_DECL_ERR:
 			System.out.println("变量声明时语法错误");
 			System.exit(-1);
@@ -102,6 +106,14 @@ public class Err {
 			break;
 		case FUNC_STATMENT_ERR:
 			System.out.println("函数语句语法错误");
+			System.exit(-1);
+			break;
+		case FUNC_PARA_ERR:
+			System.out.println("函数参数个数错误");
+			System.exit(-1);
+			break;
+		case VOID_FUNC_CALL_ERR:
+			System.out.println("表达式中调用返回值为空的函数");
 			System.exit(-1);
 			break;
 		default:

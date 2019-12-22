@@ -4,8 +4,6 @@ import java.util.ArrayList;
 
 import lexicalAnalysis.Token;
 import lexicalAnalysis.TokenType;
-import out.Output;
-import out.Text;
 import error.*;
 
 public class SyntaxAnalysis {
@@ -18,11 +16,13 @@ public class SyntaxAnalysis {
 	private FuncTable funcTable = new FuncTable();
 	// 函数返回类型
 	private TokenType resType;
-	// 函数参数列表
-	private ArrayList<TokenType> paraList;
+	// 函数参数个数
+	private int paraNum;
+	// 函数信息体
+	private Func func = null;
 
 	// 语句块
-	private Block block;
+	private Block block = null;
 	// 语句块编号
 	private int NO = 1;
 	// 变量表
@@ -38,10 +38,11 @@ public class SyntaxAnalysis {
 	// stm2的index
 	private int label2;
 
+	// 调用者提供的参数个数
+	private int callParaNum;
+
 	// 指令文本
 	private Text text;
-	// 输出文件列表
-	private Output output = new Output();
 
 	public SyntaxAnalysis(ArrayList<Token> tokenList) {
 		this.tokenList = tokenList;
@@ -68,9 +69,13 @@ public class SyntaxAnalysis {
 	// 途中产生语法错误或者语义错误时会直接调用Err.error()进行报错并直接退出程序
 
 	// 语法分析的入口
-	public void syntaxAnalysis() {
+	public FuncTable syntaxAnalysis() {
 		if (analyseC0Program() == 1) {
 			System.out.println("语法分析完成");
+			return funcTable;
+		} else {
+			System.out.println("语法分析失败");
+			return null;
 		}
 	}
 
@@ -139,13 +144,14 @@ public class SyntaxAnalysis {
 
 	// <C0-program> ::= {<variable-declaration>}{<function-definition>}
 	private int analyseC0Program() {
+		// 记录全局的变量声明是否已经解析完
+		boolean flag = false;
 		// {<variable-declaration>}
 		// 为全局常、变量新建一个Block，编号为0，父编号为-1
 		block = new Block(0, -1);
 		table.addBlock(block);
 		// 为全局常、变量的初始化代码新建代码块
 		text = new Text("全局"); // 用中文当名字，防止和后面的函数重名
-		output.addText(text);
 		while (true) {
 			int res = analyseVarOrFunc();
 			// 常、变量声明
@@ -158,6 +164,14 @@ public class SyntaxAnalysis {
 			}
 			// 函数声明
 			else if (res == 2) {
+				// 刚刚解析完全局变量声明
+				if (flag == false) {
+					// 为全局变量声明创建一个函数：“全局”
+					func = new Func("全局", null, null);
+					func.addText(text);
+					funcTable.addFunc(func);
+					flag = true;
+				}
 				// 非法返回值为-1，-2
 				int temp = analyseFunctionDefinition();
 				if (temp == -1 || temp == -2) {
@@ -279,6 +293,7 @@ public class SyntaxAnalysis {
 			String name = token.getValue();
 			// 查找是否有重定义
 			// 注意，重定义只在本块中查找，不向上递归
+			// 同时不能与函数名重名
 			if (block.containsKey(name)) {
 				Err.error(ErrEnum.ID_REDECL_ERR);
 				return -2;
@@ -536,18 +551,20 @@ public class SyntaxAnalysis {
 		// <identifier>
 		else if (token.getType() == TokenType.ID) {
 			String name = token.getValue();
-			// 获得栈偏移
-			Offset off = table.getOffset(name, no);
-			// 先看是否有这个标识符
-			if (off.offset == null) {
+			Integer res = table.getKind(name, no);
+			// 不存在
+			if (res == null) {
 				Err.error(ErrEnum.ID_UNDECL_ERR);
 				return -2;
 			}
-			// 再看是否已初始化
-			if (table.getBlock(no).isUnInit(name)) {
+			// 未初始化
+			if (res == -1) {
 				Err.error(ErrEnum.VAR_UNINIT_ERR);
 				return -2;
 			}
+			// 获得栈偏移
+			Offset off = table.getOffset(name, no);
+
 			// level = 1
 			if (off.no == 0 && no != 0) {
 				text.addCode("loada", "1", off.offset.toString());
@@ -556,6 +573,7 @@ public class SyntaxAnalysis {
 			else {
 				text.addCode("loada", "0", off.offset.toString());
 			}
+			text.addCode("iload", "", "");
 			return 1;
 		}
 		// <integer-literal>
@@ -563,10 +581,15 @@ public class SyntaxAnalysis {
 			text.addCode("ipush", token.getValue(), "");
 			return 1;
 		}
-		// 暂时先不考虑函数调用
-		// else if (analyseFunctionCall() == 1) {
-		//
-		// }
+		// 函数调用
+		int res = analyseFunctionCall(no);
+		// 表达式中使用返回值为空的函数调用
+		if (res == 1) {
+			Err.error(ErrEnum.VOID_FUNC_CALL_ERR);
+			return -2;
+		} else if (res == 2) {
+			return 1;
+		}
 		// 头符号集不匹配
 		else {
 			reToken();
@@ -594,26 +617,44 @@ public class SyntaxAnalysis {
 			if (token.getType() == TokenType.ID) {
 				String name = token.getValue();
 				// 有函数重名
-				if (funcTable.containsKey(name)) {
+				if (funcTable.containsFunc(name)) {
 					Err.error(ErrEnum.FUNC_REDECL_ERR);
 					return -2;
 				}
-				// 函数表中添加该函数
-				funcTable.put(name, null);
-				int no = NO++;
+
 				// 这里将参数当作函数中最外层的一个块
-				// 所以参数块的父块一定是全局块0
+				// 注意，函数名和参数，算作函数第一个大括号的作用域
+				// 这个块的父块一定是全局块0
+				// 栈偏移置零
+				offset = 0;
+				// 参数个数置零
+				paraNum = 0;
+				int no = NO++;
+				// 由于愚蠢的错误，导致Block数据结构根本没有必要
+				// 现在每个函数只会有一个Block
 				block = new Block(no, 0);
 				table.addBlock(block);
+				// 新建代码块
 				text = new Text(name);
-				output.addText(text);
-				offset = 0;
 				// 开始分析参数列表
 				// 注意，参数也算作局部常、变量
 				if (analyseParameterClause() == 1) {
-					// 这里手动填入fatherNo
+					// 参数分析完成
+					func = new Func(name, resType, paraNum);
+					// text整合到func对应位置
+					func.addText(text);
+					funcTable.addFunc(func);
 					if (analyseCompoundStatement(no) == 1) {
-						// 在这里整合函数的信息，回填入函数表中
+						// 回退block
+						// 其实没必要
+						block = table.getBlock(block.fatherNo);
+						// 无论如何，函数需要返回语句
+						if (resType == TokenType.VOID) {
+							text.addCode("ret", "", "");
+						} else {
+							text.addCode("ipush", "0", "");
+							text.addCode("iret", "", "");
+						}
 						return 1;
 					}
 					// 函数语句语法错误
@@ -644,8 +685,6 @@ public class SyntaxAnalysis {
 		if (token == null) {
 			return 0;
 		}
-		// 新建参数列表
-		paraList = new ArrayList<TokenType>();
 		if (token.getType() == TokenType.LSB) {
 			// 这里先预读一个token判断是否有参数
 			token = getToken();
@@ -724,8 +763,8 @@ public class SyntaxAnalysis {
 				return -2;
 			}
 			if (token.getType() == TokenType.INT) {
-				// 参数列表中添加参数类型
-				paraList.add(TokenType.INT);
+				// 参数个数+1
+				paraNum++;
 				token = getToken();
 				if (token == null) {
 					Err.error(ErrEnum.EOF_ERR);
@@ -752,8 +791,8 @@ public class SyntaxAnalysis {
 		}
 		// 非CONST参数
 		else if (token.getType() == TokenType.INT) {
-			// 参数列表中添加参数
-			paraList.add(TokenType.INT);
+			// 参数个数+1
+			paraNum++;
 			token = getToken();
 			if (token == null) {
 				Err.error(ErrEnum.EOF_ERR);
@@ -787,11 +826,9 @@ public class SyntaxAnalysis {
 			return 0;
 		}
 		if (token.getType() == TokenType.LLB) {
-			int no = NO++;
-			// 新建块
-			block = new Block(no, fatherNo);
-			table.addBlock(block);
 			// {<variable-declaration>}
+			// 直接获取当前block的no就行
+			int no = block.no;
 			while (true) {
 				if (analyseVariableDeclaration(no) != 1) {
 					break;
@@ -810,8 +847,6 @@ public class SyntaxAnalysis {
 				Err.error(ErrEnum.RLB_ERR);
 				return -2;
 			}
-			// 回退block
-			block = table.getBlock(block.fatherNo);
 			return 1;
 		} else {
 			reToken();
@@ -830,7 +865,7 @@ public class SyntaxAnalysis {
 	}
 
 	// <statement> ::=
-	// <compound-statement>
+	// '{' <statement-seq> '}'
 	// |<condition-statement>
 	// |<loop-statement>
 	// |<jump-statement>
@@ -838,11 +873,30 @@ public class SyntaxAnalysis {
 	// |<scan-statement>
 	// |<assignment-expression>';'
 	// |<function-call>';'
-	// |';'
+	// |';''
 	private int analyseStatement(int no) {
-		if (analyseCompoundStatement(no) == 1) {
+		token = getToken();
+		if (token == null) {
+			return 0;
+		}
+		if (token.getType() == TokenType.LLB) {
+			if (analyseStatementSeq(no) != 1) {
+				Err.error(ErrEnum.FUNC_STATMENT_ERR);
+				return -2;
+			}
+			token = getToken();
+			if (token == null) {
+				Err.error(ErrEnum.EOF_ERR);
+				return -2;
+			}
+			if (token.getType() != TokenType.RLB) {
+				Err.error(ErrEnum.RLB_ERR);
+				return -2;
+			}
 			return 1;
-		} else if (analyseConditionStatement(no) == 1) {
+		}
+		reToken();
+		if (analyseConditionStatement(no) == 1) {
 			return 1;
 		} else if (analyseLoopStatement(no) == 1) {
 			return 1;
@@ -853,17 +907,60 @@ public class SyntaxAnalysis {
 		} else if (analyseScanStatement(no) == 1) {
 			return 1;
 		}
-		// 再单独判断后面是否有分号
-		else if (analyseAssignmentExpression(no) == 1) {
-			return 1;
+		// 赋值语句和函数调用头符号集相同
+		// 这里token不可能为空
+		token = getToken();
+		if (token.getType() == TokenType.ID) {
+			String name = token.getValue();
+			reToken();
+			// 如果是函数
+			if (funcTable.containsFunc(name)) {
+				int res = analyseFunctionCall(no);
+				if (res == 1 || res == 2) {
+					token = getToken();
+					if (token == null) {
+						Err.error(ErrEnum.EOF_ERR);
+						return -2;
+					}
+					if (token.getType() != TokenType.SEM) {
+						Err.error(ErrEnum.SEM_ERR);
+						return -2;
+					}
+					return 1;
+				}
+				Err.error(ErrEnum.FUNC_STATMENT_ERR);
+				return -2;
+			}
+			// 其余均用变量来解释
+			else {
+				if (analyseAssignmentExpression(no) == 1) {
+					token = getToken();
+					if (token == null) {
+						Err.error(ErrEnum.EOF_ERR);
+						return -2;
+					}
+					if (token.getType() != TokenType.SEM) {
+						Err.error(ErrEnum.SEM_ERR);
+						return -2;
+					}
+					return 1;
+				}
+				Err.error(ErrEnum.FUNC_STATMENT_ERR);
+				return -2;
+			}
 		}
-		// 再单独判断后面是否有分号
-		else if (analyseFunctionCall(no) == 1) {
-			return 1;
-		} else {
+		// ;
+		reToken();
+		token = getToken();
+		if (token == null) {
+			return 0;
+		}
+		if (token.getType() != TokenType.SEM) {
+			reToken();
+			return -1;
+		}
+		return 1;
 
-		}
-		return -1;
 	}
 
 	// <condition-statement> ::=
@@ -1001,27 +1098,437 @@ public class SyntaxAnalysis {
 		return -1;
 	}
 
+	// <loop-statement> ::= 'while' '(' <condition> ')' <statement>
 	private int analyseLoopStatement(int no) {
+		token = getToken();
+		if (token == null) {
+			return 0;
+		}
+		// while
+		if (token.getType() == TokenType.WHILE) {
+			// (
+			token = getToken();
+			if (token == null) {
+				Err.error(ErrEnum.EOF_ERR);
+				return -2;
+			}
+			if (token.getType() != TokenType.LSB) {
+				Err.error(ErrEnum.LSB_ERR);
+				return -2;
+			}
+			// 记录label2固定跳转
+			label2 = text.getIndex() + 1;
+			if (analyseCondition(no) != 1) {
+				Err.error(ErrEnum.FUNC_STATMENT_ERR);
+				return -2;
+			}
+			// )
+			token = getToken();
+			if (token == null) {
+				Err.error(ErrEnum.EOF_ERR);
+				return -2;
+			}
+			if (token.getType() != TokenType.RSB) {
+				Err.error(ErrEnum.RSB_ERR);
+				return -2;
+			}
+			if (analyseStatement(no) != 1) {
+				Err.error(ErrEnum.FUNC_STATMENT_ERR);
+				return -2;
+			}
+			text.addCode("jmp", new Integer(label2).toString(), "");
+			label1 = text.getIndex() + 1;
+			text.reWrite(jmp, "", new Integer(label1).toString(), "");
+			return 1;
+		}
+		reToken();
 		return -1;
 	}
 
+	// <jump-statement> ::= <return-statement>
+	// <return-statement> ::= 'return' [<expression>] ';'
+	// <jump-statement> ::= 'return' [<expression>] ';'
 	private int analyseJumpStatement(int no) {
+		token = getToken();
+		if (token == null) {
+			return 0;
+		}
+		// return
+		if (token.getType() == TokenType.RETURN) {
+			if (func.resType == TokenType.VOID) {
+				token = getToken();
+				if (token == null) {
+					Err.error(ErrEnum.EOF_ERR);
+					return -2;
+				}
+				if (token.getType() != TokenType.SEM) {
+					Err.error(ErrEnum.SEM_ERR);
+					return -2;
+				}
+				text.addCode("ret", "", "");
+				return 1;
+			} else if (func.resType == TokenType.INT) {
+				if (analyseExpression(no) != 1) {
+					Err.error(ErrEnum.EXP_ERR);
+					return -2;
+				}
+				// ;
+				token = getToken();
+				if (token == null) {
+					Err.error(ErrEnum.EOF_ERR);
+					return -2;
+				}
+				if (token.getType() != TokenType.SEM) {
+					Err.error(ErrEnum.SEM_ERR);
+					return -2;
+				}
+				text.addCode("iret", "", "");
+				return 1;
+			} else {
+				Err.error(ErrEnum.SP_ERR);
+				return -2;
+			}
+
+		}
+		reToken();
 		return -1;
 	}
 
+	// <print-statement> ::= 'print' '(' [<printable-list>] ')' ';'
 	private int analysePrintStatement(int no) {
+		token = getToken();
+		if (token == null) {
+			return 0;
+		}
+		if (token.getType() != TokenType.PRINT) {
+			reToken();
+			return -1;
+		}
+		token = getToken();
+		if (token == null) {
+			Err.error(ErrEnum.EOF_ERR);
+			return -2;
+		}
+		if (token.getType() != TokenType.LSB) {
+			Err.error(ErrEnum.LSB_ERR);
+			return -2;
+		}
+		// 预读
+		token = getToken();
+		if (token == null) {
+			Err.error(ErrEnum.EOF_ERR);
+			return -2;
+		}
+		if (token.getType() == TokenType.RSB) {
+			return 1;
+		}
+		// 含有表达式
+		reToken();
+		if (analysePrintableList(no) != 1) {
+			Err.error(ErrEnum.FUNC_STATMENT_ERR);
+			return -2;
+		}
+		text.addCode("printl", "", "");
+		token = getToken();
+		if (token == null) {
+			Err.error(ErrEnum.EOF_ERR);
+			return -2;
+		}
+		if (token.getType() != TokenType.RSB) {
+			Err.error(ErrEnum.RSB_ERR);
+			return -2;
+		}
+		token = getToken();
+		if (token == null) {
+			Err.error(ErrEnum.EOF_ERR);
+			return -2;
+		}
+		if (token.getType() != TokenType.SEM) {
+			Err.error(ErrEnum.SEM_ERR);
+			return -2;
+		}
+		return 1;
+	}
+
+	// <printable-list> ::= <printable> {',' <printable>}
+	private int analysePrintableList(int no) {
+		if (analysePrintable(no) == 1) {
+			while (true) {
+				token = getToken();
+				if (token == null) {
+					return 1;
+				}
+				if (token.getType() != TokenType.COMMA) {
+					reToken();
+					return 1;
+				}
+				// bipush 32 + cprint
+				text.addCode("bipush", "32", "");
+				text.addCode("cprint", "", "");
+				if (analysePrintable(no) != 1) {
+					Err.error(ErrEnum.FUNC_STATMENT_ERR);
+					return -2;
+				}
+			}
+		}
 		return -1;
 	}
 
+	// <printable> ::= <expression>
+	private int analysePrintable(int no) {
+		if (analyseExpression(no) != 1) {
+			return -1;
+		}
+		text.addCode("iprint", "", "");
+		return 1;
+	}
+
+	// <scan-statement> ::= 'scan' '(' <identifier> ')' ';'
 	private int analyseScanStatement(int no) {
-		return -1;
+		// scan
+		token = getToken();
+		if (token == null) {
+			return 0;
+		}
+		if (token.getType() != TokenType.SCAN) {
+			reToken();
+			return -1;
+		}
+		// (
+		token = getToken();
+		if (token == null) {
+			Err.error(ErrEnum.EOF_ERR);
+			return -2;
+		}
+		if (token.getType() != TokenType.LSB) {
+			Err.error(ErrEnum.LSB_ERR);
+			return -2;
+		}
+		// id
+		token = getToken();
+		if (token == null) {
+			Err.error(ErrEnum.EOF_ERR);
+			return -2;
+		}
+		if (token.getType() != TokenType.ID) {
+			Err.error(ErrEnum.ID_ERR);
+			return -2;
+		}
+		String name = token.getValue();
+		// )
+		token = getToken();
+		if (token == null) {
+			Err.error(ErrEnum.EOF_ERR);
+			return -2;
+		}
+		if (token.getType() != TokenType.RSB) {
+			Err.error(ErrEnum.RSB_ERR);
+			return -2;
+		}
+		// ;
+		token = getToken();
+		if (token == null) {
+			Err.error(ErrEnum.EOF_ERR);
+			return -2;
+		}
+		if (token.getType() != TokenType.SEM) {
+			Err.error(ErrEnum.SEM_ERR);
+			return -2;
+		}
+		// 先求地址，栈偏移
+		Integer res = table.getKind(name, no);
+		// 不存在
+		if (res == null) {
+			Err.error(ErrEnum.ID_UNDECL_ERR);
+			return -2;
+		}
+		// 常量
+		if (res == 0) {
+			Err.error(ErrEnum.CONST_AS_ERR);
+			return -2;
+		}
+		// 获得栈偏移
+		Offset off = table.getOffset(name, no);
+		// level = 1
+		if (off.no == 0 && no != 0) {
+			text.addCode("loada", "1", off.offset.toString());
+		}
+		// level = 0
+		else {
+			text.addCode("loada", "0", off.offset.toString());
+		}
+		// 再压栈值
+		text.addCode("iscan", "", "");
+		// 最后store
+		text.addCode("istore", "", "");
+		return 1;
 	}
 
+	// <assignment-expression> ::= <identifier>'='<expression>
 	private int analyseAssignmentExpression(int no) {
+		token = getToken();
+		if (token == null) {
+			return 0;
+		}
+		if (token.getType() != TokenType.ID) {
+			reToken();
+			return -1;
+		}
+		// 加载地址
+		String name = token.getValue();
+		Integer res = table.getKind(name, no);
+		// 不存在
+		if (res == null) {
+			Err.error(ErrEnum.ID_UNDECL_ERR);
+			return -2;
+		}
+		// 常量
+		if (res == 0) {
+			Err.error(ErrEnum.CONST_AS_ERR);
+			return -2;
+		}
+		// 获得栈偏移
+		Offset off = table.getOffset(name, no);
+		// level = 1
+		if (off.no == 0 && no != 0) {
+			text.addCode("loada", "1", off.offset.toString());
+		}
+		// level = 0
+		else {
+			text.addCode("loada", "0", off.offset.toString());
+		}
+		// =
+		token = getToken();
+		if (token == null) {
+			Err.error(ErrEnum.EOF_ERR);
+			return -2;
+		}
+		if (token.getType() != TokenType.E) {
+			Err.error(ErrEnum.SP_ERR);
+			return -2;
+		}
+		// <expression>
+		if (analyseExpression(no) != 1) {
+			Err.error(ErrEnum.FUNC_STATMENT_ERR);
+			return -2;
+		}
+		// 解析完表达式，值已经被压栈了
+		text.addCode("istore", "", "");
+		// 如果是未初始化的变量，则更改状态
+		if (res == -1) {
+			table.getBlock(off.no).change(name);
+		}
+		return 1;
+	}
+
+	// <function-call> ::=
+	// <identifier> '(' [<expression-list>] ')'
+	// 这里比较特殊，涉及到返回值类型的问题
+	// VOID 返回1
+	// INT 返回2
+	private int analyseFunctionCall(int no) {
+		token = getToken();
+		if (token == null) {
+			return 0;
+		}
+		if (token.getType() == TokenType.ID) {
+			String name = token.getValue();
+			// 查找是否有该函数
+			if (!funcTable.containsFunc(name)) {
+				Err.error(ErrEnum.ID_UNDECL_ERR);
+				return -2;
+			}
+			// 获得该函数的引用
+			Func temp = funcTable.getFunc(name);
+			token = getToken();
+			if (token == null) {
+				Err.error(ErrEnum.EOF_ERR);
+				return -2;
+			}
+			if (token.getType() != TokenType.LSB) {
+				Err.error(ErrEnum.LSB_ERR);
+				return -2;
+			}
+			// 预读判断是否有参数列表
+			token = getToken();
+			if (token == null) {
+				Err.error(ErrEnum.EOF_ERR);
+				return -2;
+			}
+			// 没有参数列表
+			if (token.getType() == TokenType.RSB) {
+				reToken();
+				// 检查参数个数是否对应
+				if (temp.paraNum != 0) {
+					Err.error(ErrEnum.FUNC_PARA_ERR);
+					return -2;
+				}
+				// 获得函数表上的位置
+				Integer funcIndex = funcTable.getIndex(name);
+				// 由于将全局变量声明的代码也视作一个函数，所以这里funcIndex会比正常多1
+				// 添加调用语句
+				text.addCode("call", new Integer(funcIndex - 1).toString(), "");
+			}
+			// 有参数列表
+			else {
+				reToken();
+				// 调用者提供的参数置零
+				callParaNum = 0;
+				if (analyseExpressionList(no) != 1) {
+					Err.error(ErrEnum.FUNC_STATMENT_ERR);
+					return -2;
+				}
+				// 检查参数个数是否对应
+				if (temp.paraNum != callParaNum) {
+					Err.error(ErrEnum.FUNC_PARA_ERR);
+					return -2;
+				}
+				// 获得函数表上的位置
+				Integer funcIndex = funcTable.getIndex(name);
+				// 这里同上
+				// 添加调用语句
+				text.addCode("call", new Integer(funcIndex - 1).toString(), "");
+			}
+			token = getToken();
+			if (token == null) {
+				Err.error(ErrEnum.EOF_ERR);
+				return -2;
+			}
+			if (token.getType() != TokenType.RSB) {
+				Err.error(ErrEnum.RSB_ERR);
+				return -2;
+			}
+			if (temp.resType == TokenType.VOID) {
+				return 1;
+			} else if (temp.resType == TokenType.INT) {
+				return 2;
+			}
+		}
+		reToken();
 		return -1;
 	}
 
-	private int analyseFunctionCall(int no) {
+	// <expression-list> ::=
+	// <expression>{','<expression>}
+	private int analyseExpressionList(int no) {
+		if (analyseExpression(no) == 1) {
+			callParaNum++;
+			while (true) {
+				token = getToken();
+				if (token == null) {
+					return 1;
+				}
+				if (token.getType() != TokenType.COMMA) {
+					reToken();
+					return 1;
+				}
+				if (analyseExpression(no) != 1) {
+					Err.error(ErrEnum.FUNC_STATMENT_ERR);
+					return -2;
+				}
+				callParaNum++;
+			}
+		}
 		return -1;
 	}
 }

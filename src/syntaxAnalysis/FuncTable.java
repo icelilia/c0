@@ -1,26 +1,52 @@
 package syntaxAnalysis;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 
-class FuncTable {
-	private HashMap<String, Func> funcTable = new HashMap<String, Func>();
+public class FuncTable {
+	private ArrayList<Func> funcList = new ArrayList<Func>();
 
 	FuncTable() {
 	}
 
+	// 添加函数
+	void addFunc(Func func) {
+		funcList.add(func);
+	}
+
 	// 返回是否有该函数
-	boolean containsKey(String name) {
-		return funcTable.containsKey(name);
+	boolean containsFunc(String name) {
+		for (Func func : funcList) {
+			if (func.name.contentEquals(name)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
-	// 设置函数的值
-	void put(String name, Func value) {
-		funcTable.put(name, value);
+	// 返回函数的index
+	Integer getIndex(String name) {
+		int i;
+		for (i = 0; i < funcList.size(); i++) {
+			if (funcList.get(i).name.contentEquals(name)) {
+				return i;
+			}
+		}
+		return null;
 	}
 
-	// 存在此函数则返回表的引用
-	// 不存在则返回null
-	Func get(String name) {
-		return funcTable.get(name);
+	// 返回函数的引用
+	Func getFunc(String name) {
+		int i;
+		for (i = 0; i < funcList.size(); i++) {
+			if (funcList.get(i).name.contentEquals(name)) {
+				return funcList.get(i);
+			}
+		}
+		return null;
 	}
+
+	public ArrayList<Func> getFuncList() {
+		return this.funcList;
+	}
+
 }

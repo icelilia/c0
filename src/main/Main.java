@@ -8,7 +8,10 @@ import java.util.ArrayList;
 
 import error.*;
 import lexicalAnalysis.*;
+import syntaxAnalysis.Code;
+import syntaxAnalysis.Func;
 import syntaxAnalysis.SyntaxAnalysis;
+import syntaxAnalysis.Text;
 
 public class Main {
 
@@ -16,7 +19,9 @@ public class Main {
 	static String outputPath = "out";
 	static FileInputStream fileInputStream;
 	static FileOutputStream fileOutputStream;
+	static FileOutputStream fileOutputStreamS;
 	static ArrayList<Token> tokenList;
+	static ArrayList<Func> funcList;
 
 	public static void main(String[] args) {
 		int argsLength = args.length;
@@ -78,16 +83,24 @@ public class Main {
 		} catch (FileNotFoundException e) {
 			Err.error(ErrEnum.OUTPUT_FILE_ERR);
 		}
+		try {
+			fileOutputStreamS = new FileOutputStream(outputPath + ".s");
+		} catch (FileNotFoundException e) {
+			Err.error(ErrEnum.OUTPUT_FILE_ERR);
+		}
 
 		LexicalAnalysis lexicalAnalysis = new LexicalAnalysis(fileInputStream);
 		tokenList = lexicalAnalysis.lexicalAnalysis();
 		viewTokenList(); // 写出tokenList至output.txt
 		SyntaxAnalysis syntaxAnalysis = new SyntaxAnalysis(tokenList);
-		syntaxAnalysis.syntaxAnalysis();
+		// 获得funcList
+		funcList = syntaxAnalysis.syntaxAnalysis().getFuncList();
+		viewS();
 
 		try {
 			fileInputStream.close();
 			fileOutputStream.close();
+			fileOutputStreamS.close();
 		} catch (IOException e) {
 			System.err.println("文件流关闭出错");
 			System.exit(-1);
@@ -121,6 +134,125 @@ public class Main {
 			}
 		} catch (IOException e) {
 			Err.error(ErrEnum.OUTPUT_ERR);
+		}
+	}
+
+	private static void viewS() {
+		String temp;
+		char[] tempArr;
+		// 常量表表头
+		temp = ".constants:" + "\n" + "#" + "\t" + "index" + "\t" + "type" + "\t" + "value" + "\n";
+		tempArr = temp.toCharArray();
+		try {
+			for (char ch : tempArr) {
+				fileOutputStreamS.write(ch);
+			}
+		} catch (Exception e) {
+			Err.error(ErrEnum.OUTPUT_ERR);
+		}
+		// 准备常量表正文
+		temp = "";
+		Integer funcIndex = 0;
+		int i;
+		for (i = 1; i < funcList.size(); i++) {
+			temp = temp + "\t" + funcIndex.toString() + "\t" + "S" + "\t" + funcList.get(i).name + "\n";
+			funcIndex = funcIndex + 1;
+		}
+		tempArr = temp.toCharArray();
+		try {
+			for (char ch : tempArr) {
+				fileOutputStreamS.write(ch);
+			}
+		} catch (Exception e) {
+			Err.error(ErrEnum.OUTPUT_ERR);
+		}
+
+		Text text;
+		ArrayList<Code> codeList;
+
+		// 启动表表头
+		temp = ".start:" + "\n" + "#" + "\t" + "index" + "\t" + "op" + "\t" + "on1" + "\t" + "on2" + "\n";
+		tempArr = temp.toCharArray();
+		try {
+			for (char ch : tempArr) {
+				fileOutputStreamS.write(ch);
+			}
+		} catch (Exception e) {
+			Err.error(ErrEnum.OUTPUT_ERR);
+		}
+		// 准备启动表正文
+		temp = "";
+		text = funcList.get(0).text;
+		codeList = text.getCodesList();
+		for (Code code : codeList) {
+			temp = temp + code.toString();
+		}
+		tempArr = temp.toCharArray();
+		try {
+			for (char ch : tempArr) {
+				fileOutputStreamS.write(ch);
+			}
+		} catch (Exception e) {
+			Err.error(ErrEnum.OUTPUT_ERR);
+		}
+
+		// 函数表表头
+		temp = ".functions:" + "\n" + "#" + "\t" + "index" + "\t" + "_index" + "\t" + "para" + "\t" + "level" + "\n";
+		tempArr = temp.toCharArray();
+		try {
+			for (char ch : tempArr) {
+				fileOutputStreamS.write(ch);
+			}
+		} catch (Exception e) {
+			Err.error(ErrEnum.OUTPUT_ERR);
+		}
+		// 准备函数表正文
+		temp = "";
+		funcIndex = 0;
+		for (i = 1; i < funcList.size(); i++) {
+			temp = temp + "\t" + funcIndex.toString() + "\t" + funcIndex.toString() + "\t"
+					+ funcList.get(i).paraNum.toString() + "\t" + "1" + "\n";
+			funcIndex = funcIndex + 1;
+		}
+		tempArr = temp.toCharArray();
+		try {
+			for (char ch : tempArr) {
+				fileOutputStreamS.write(ch);
+			}
+		} catch (Exception e) {
+			Err.error(ErrEnum.OUTPUT_ERR);
+		}
+
+		// 函数体表头
+		temp = "#" + "\t" + "index" + "\t" + "op" + "\t" + "on1" + "\t" + "on2" + "\n";
+		tempArr = temp.toCharArray();
+		try {
+			for (char ch : tempArr) {
+				fileOutputStreamS.write(ch);
+			}
+		} catch (Exception e) {
+			Err.error(ErrEnum.OUTPUT_ERR);
+		}
+		temp = "";
+		funcIndex = 0;
+		for (i = 1; i < funcList.size(); i++) {
+			codeList = funcList.get(i).text.getCodesList();
+			// 函数头
+			temp = temp + ".F" + funcIndex.toString() + ":" + "\n";
+			for (Code code : codeList) {
+				temp = temp + code.toString();
+			}
+
+			tempArr = temp.toCharArray();
+			try {
+				for (char ch : tempArr) {
+					fileOutputStreamS.write(ch);
+				}
+			} catch (Exception e) {
+				Err.error(ErrEnum.OUTPUT_ERR);
+			}
+			funcIndex = funcIndex + 1;
+			temp = "";
 		}
 	}
 }

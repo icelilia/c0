@@ -22,6 +22,8 @@ public enum ErrEnum {
 	CONST_DECL_ERR, // 常量声明时语法错误
 
 	CONST_INIT_ERR, // 常量未被显示地初始化
+	
+	CONST_AS_ERR, // 常量无法被再次赋值
 
 	ID_REDECL_ERR, // 常量重定义
 
@@ -50,6 +52,10 @@ public enum ErrEnum {
 	RLB_ERR, // 缺少右-大括号
 
 	FUNC_STATMENT_ERR, // 函数语句语法错误
+	
+	FUNC_PARA_ERR, // 函数调用错误
+	
+	VOID_FUNC_CALL_ERR, // 表达式中调用返回值为空的函数
 
 	ErrNoBegin, ErrNoEnd, ErrNeedIdentifier, ErrConstantNeedValue, ErrNoSemicolon, ErrInvalidVariableDeclaration,
 	ErrIncompleteExpression, ErrNotDeclared, ErrAssignToConstant, ErrDuplicateDeclaration, ErrNotInitialized,

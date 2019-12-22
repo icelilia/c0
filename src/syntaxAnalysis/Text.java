@@ -1,4 +1,4 @@
-package out;
+package syntaxAnalysis;
 
 import java.util.ArrayList;
 
@@ -8,24 +8,24 @@ public class Text {
 	private ArrayList<Code> codeList = new ArrayList<Code>();
 
 	// name即为函数名
-	public Text(String name) {
+	Text(String name) {
 		this.name = name;
 	}
 
 	// 添加指令
-	public void addCode(String opcode, String operands1, String operands2) {
+	void addCode(String opcode, String operands1, String operands2) {
 		Code code = new Code(index++, opcode, operands1, operands2);
 		codeList.add(code);
 	}
 
 	// 关于回填
 	// 得到顶层指令的index
-	public int getIndex() {
+	int getIndex() {
 		return codeList.get(codeList.size() - 1).index;
 	}
 
 	// 根据index来更改指令
-	public void reWrite(int index, String opcode, String operands1, String operands2) {
+	void reWrite(int index, String opcode, String operands1, String operands2) {
 		Code code = codeList.get(index);
 		if (!opcode.contentEquals("")) {
 			code.opcode = opcode;
@@ -44,7 +44,7 @@ public class Text {
 	}
 
 	// 返回指令
-	public ArrayList<Code> getTextList() {
+	public ArrayList<Code> getCodesList() {
 		return codeList;
 	}
 }

@@ -14,9 +14,31 @@ class Block {
 		this.fatherNo = fatherNo;
 	}
 
-	// 返回常量表和变量表中是否有这个标识符
+	// 返回是否有这个标识符
 	boolean containsKey(String name) {
 		return constTable.containsKey(name) || initVarTable.containsKey(name) || unInitVarTable.containsKey(name);
+	}
+
+	// 返回标识符类型
+	Integer getKind(String name) {
+		if (constTable.containsKey(name)) {
+			return 0;
+		} else if (initVarTable.containsKey(name)) {
+			return 1;
+		} else if (unInitVarTable.containsKey(name)) {
+			return -1;
+		}
+		return null;
+	}
+
+	// 判断是否已初始化
+	boolean isUnInit(String name) {
+		return unInitVarTable.containsKey(name);
+	}
+
+	// 判断是否是常量
+	boolean isConst(String name) {
+		return constTable.containsKey(name);
 	}
 
 	// kind种类为两种
@@ -33,11 +55,6 @@ class Block {
 		}
 	}
 
-	// 判断是否已初始化
-	boolean isUnInit(String name) {
-		return unInitVarTable.containsKey(name);
-	}
-
 	// 将未初始化变量转为初始化变量
 	void change(String name) {
 		Integer offset = unInitVarTable.get(name);
@@ -46,16 +63,23 @@ class Block {
 	}
 
 	Integer getOffset(String name) {
+		// 常量表
 		Integer offset = constTable.get(name);
 		if (offset != null) {
 			return offset;
 		}
-		// 常量表为空则查变量表
+		// 变量表
 		offset = initVarTable.get(name);
+		if (offset != null) {
+			return offset;
+		}
+		// 未初始化变量表
+		offset = unInitVarTable.get(name);
 		if (offset != null) {
 			return offset;
 		}
 		// 都为空就返回null
 		return null;
 	}
+
 }
