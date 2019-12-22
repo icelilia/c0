@@ -11,3 +11,5 @@
 + IDE：Eclipse 2019-06
 ## c0语法
 + 详见/src/readme.txt
+## 记录
++ 2019-12-23 凌晨，完成-s输出，Alpha版
