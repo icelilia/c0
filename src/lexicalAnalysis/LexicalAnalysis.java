@@ -7,6 +7,9 @@ import java.util.ArrayList;
 
 import error.*;
 
+// Authorï¼šAndersen
+// è¯æ³•åˆ†ææ¯”è¾ƒç®€å•ï¼Œå°±æ²¡æœ‰åŠ å¤ªå¤šæ³¨é‡Š
+
 public class LexicalAnalysis {
 	BufferedInputStream inputStream;
 
@@ -30,7 +33,7 @@ public class LexicalAnalysis {
 	}
 
 	public ArrayList<Token> lexicalAnalysis() {
-		// ²»Îª0±íÊ¾»¹Ã»µ½EOF
+		// EOFè¿”å›0åè·³å‡º
 		while (true) {
 			curruntState = DFAState.INIT_STATE;
 			if (getToken() == 0) {
@@ -49,7 +52,7 @@ public class LexicalAnalysis {
 			inputStream.mark(1);
 			temp = (char) inputStream.read();
 		} catch (IOException e) {
-			System.err.println("ÊäÈëÁ÷¶ÁÈ¡´íÎó");
+			System.err.println("æ–‡ä»¶æµé”™è¯¯");
 			System.exit(-1);
 		}
 		return temp;
@@ -93,14 +96,13 @@ public class LexicalAnalysis {
 	}
 
 	private boolean isHex(char c) {
-		// A-F£¬a-f£¬0-9
 		return (65 <= c && c <= 70) || (97 <= c && c <= 102) || isDigit(c);
 	}
 
-	// int·µ»ØÖµ£¬-1±íÊ¾³ö´í£¬0±íÊ¾µ½´ïEOF£¬1±íÊ¾Õı³£¶ÁÈ¡
-	// Êµ¼ÊÇé¿öÓÃ²»µ½-1£¬ÒòÎªÒ»µ©³ö´í¾ÍÖ±½Óµ÷ÓÃErr.error½øĞĞ´íÎó´¦Àí£¬²¢ÇÒÖ´ĞĞSystem.exit(-1)
+	// é‡åˆ°EOFè¿”å›0
+	// æ­£å¸¸è¿”å›1
 	private int getToken() {
-		// ³õÊ¼»¯
+		// åˆå§‹åŒ–å·²å‚¨å­˜å­—ç¬¦ä¸²
 		tokenString = "";
 		while (true) {
 			ch = getchar();
@@ -109,35 +111,34 @@ public class LexicalAnalysis {
 				if (isEOF(ch)) {
 					return 0;
 				}
-				// ¿Õ°××Ö·ûÖ±½ÓÌø¹ı
+				// ç©ºç™½å­—ç¬¦ç›´æ¥è·³è¿‡
 				if (isSpace(ch) || isTab(ch) || isLF(ch) || isCR(ch)) {
 					break;
 				}
-				// ÎªÊı×Ö
+				// æ•°å­—
 				else if (isDigit(ch)) {
-					// ²»ÊÇ0¿ªÍ·£¬Ê®½øÖÆÕûÊı
+					// é0æ•°å­—
 					if (ch != '0') {
 						curruntState = DFAState.DEC_INT_STATE;
 					}
-					// 0¿ªÍ·£¬Ê®Áù½øÖÆÕûÊı»òÊ®½øÖÆ0
+					// æ•°å­—0ï¼Œçœ‹æƒ…å†µ
+					// åå…­è¿›åˆ¶å‰å¯¼0
+					// åè¿›åˆ¶æ•°0
 					else {
 						ch = getchar();
-						// Ê®Áù½øÖÆÕûÊı
+						// åå…­è¿›åˆ¶å‰å¯¼0
 						if (ch == 'x' || ch == 'X') {
-							// ÏòtokenStringÀï²åÈë"0x"
-							// tokenString = tokenString + "0x";
-							// Integer.valueOf()·½·¨ÖĞÊäÈëµÄ×Ö·û´®²»ÒªÇó°üº¬"0x"
-							// ÕâÀïÔÙÔ¤¶ÁÒ»¸ö×Ö·û±£Ö¤"0x"ºóÃæ¸úÓĞÊı×Ö
 							ch = getchar();
+							// è¿™é‡Œä¸ç”¨å°†"0x"åŠ è‡³å‚¨å­˜çš„å­—ç¬¦ä¸²ä¸­
 							if (isHex(ch)) {
 								curruntState = DFAState.HEX_INT_STATE;
 							}
-							// ´Ê·¨ÖĞÒªÇóÖÁÉÙÓĞÒ»Î»Êı×Ö£¬Ã»ÓĞÊı×ÖÔò±¨´í
+							// "0x"åé¢å¿…é¡»è·Ÿåå…­è¿›åˆ¶ä¸­çš„å­—ç¬¦
 							else {
 								Err.error(ErrEnum.INPUT_ERR);
 							}
 						}
-						// ÊÓ×÷µ¥¶ÀµÄÒ»¸öÊ®½øÖÆ0
+						// åè¿›åˆ¶0ç›´æ¥å¤„ç†
 						else {
 							rechar();
 							tokenString = tokenString + '0';
@@ -146,11 +147,11 @@ public class LexicalAnalysis {
 						}
 					}
 				}
-				// ÎªÓ¢ÎÄ×ÖÄ¸
+				// å­—æ¯
 				else if (isLetter(ch)) {
 					curruntState = DFAState.ID_STATE;
 				}
-				// ÆäËû·ûºÅ
+				// å…¶ä½™å­—ç¬¦
 				else {
 					switch (ch) {
 					case '+':
@@ -166,65 +167,52 @@ public class LexicalAnalysis {
 						curruntState = DFAState.DIV_STATE;
 						break;
 					case '=':
-						// Ô¤¶Á
+						// é¢„è¯»
 						temp = getchar();
-						// Ë«µÈºÅ
+						// ==
 						if (temp == '=') {
-							// Ô¤ÏÈÌí¼ÓµÚÒ»¸ö×Ö·û
 							tokenString = tokenString + ch;
 							ch = temp;
 							curruntState = DFAState.EE_STATE;
 						}
-						// µ¥µÈºÅ£¬»ØÍË
+						// =
 						else {
 							rechar();
 							curruntState = DFAState.E_STATE;
 						}
 						break;
 					case '<':
-						// Ô¤¶Á
 						temp = getchar();
-						// Ğ¡ÓÚµÈÓÚºÅ
 						if (temp == '=') {
 							tokenString = tokenString + ch;
 							ch = temp;
 							curruntState = DFAState.LE_STATE;
 							break;
-						}
-						// Ğ¡ÓÚºÅ£¬»ØÍË
-						else {
+						} else {
 							rechar();
 							curruntState = DFAState.L_STATE;
 							break;
 						}
 					case '>':
-						// Ô¤¶Á
 						temp = getchar();
-						// ´óÓÚµÈÓÚºÅ
 						if (temp == '=') {
 							tokenString = tokenString + ch;
 							ch = temp;
 							curruntState = DFAState.GE_STATE;
 							break;
-						}
-						// ´óÓÚºÅ£¬»ØÍË
-						else {
+						} else {
 							rechar();
 							curruntState = DFAState.G_STATE;
 							break;
 						}
 					case '!':
-						// Ô¤¶Á
 						temp = getchar();
-						// ²»µÈÓÚºÅ
 						if (temp == '=') {
 							tokenString = tokenString + ch;
 							ch = temp;
 							curruntState = DFAState.UE_STATE;
 							break;
-						}
-						// Òì³£×Ö·û×éºÏ£¬±¨´í
-						else {
+						} else {
 							Err.error(ErrEnum.INPUT_ERR);
 							break;
 						}
@@ -246,20 +234,17 @@ public class LexicalAnalysis {
 					case '}':
 						curruntState = DFAState.RLB_STATE;
 						break;
-					// ÆäÓà·Ç·¨×Ö·û
+					// éæ³•å­—ç¬¦é›†
 					default:
 						Err.error(ErrEnum.INPUT_ERR);
 						break;
 					}
 				}
-				// ×´Ì¬·¢Éú¸Ä±ä£¬Ìí¼Ó×Ö·û
 				if (curruntState != DFAState.INIT_STATE) {
 					tokenString = tokenString + ch;
 				}
 				break;
 			}
-			// miniplc0ÖĞ£¬ÔÚ´Ë×´Ì¬ÏÂ¶Áµ½×ÖÄ¸Ê±Ñ¡ÔñÌø×ªµ½±êÊ¶·û×´Ì¬
-			// ÕâÀïÑ¡Ôñ×ñ´Ó´Ê·¨·ÖÎö×î´óÍÌÊÉµÄÔ­Ôò£¬²¢²»Ìø×ª
 			case DEC_INT_STATE: {
 				if (isEOF(ch)) {
 					try {
@@ -271,12 +256,9 @@ public class LexicalAnalysis {
 					token = new Token(TokenType.DEC_INT, tokenString);
 					return 0;
 				}
-				// ¶Áµ½Êı×ÖÔòÖ±½ÓºÏ²¢
 				if (isDigit(ch)) {
 					tokenString = tokenString + ch;
-				}
-				// ÆäÓàÇé¿ö£¬»ØÍË×Ö·û£¬·ÖÎö
-				else {
+				} else {
 					rechar();
 					try {
 						num = Integer.parseInt(tokenString);
@@ -289,35 +271,27 @@ public class LexicalAnalysis {
 				}
 				break;
 			}
-			// Ê®Áù½øÖÆ»ù±¾Í¬Ê®½øÖÆ
 			case HEX_INT_STATE: {
 				if (isEOF(ch)) {
 					try {
-						// Ê®Áù½øÖÆµÄÖ±½Ó×ª»»
 						num = Integer.valueOf(tokenString, 16);
 					} catch (NumberFormatException e) {
 						Err.error(ErrEnum.INT_OF_ERR);
 						break;
 					}
-					// ÕâÀïÑ¡ÔñÖ±½Ó½«Ê®Áù½øÖÆ×ª»¯³ÉÊ®½øÖÆ
 					token = new Token(TokenType.DEC_INT, new Integer(num).toString());
 					return 0;
 				}
-				// ¶Áµ½Ê®Áù½øÖÆºÏ·¨×Ö·ûÔòÖ±½ÓºÏ²¢
 				if (isHex(ch)) {
 					tokenString = tokenString + ch;
-				}
-				// ÆäÓàÇé¿ö£¬»ØÍË×Ö·û£¬·ÖÎö
-				else {
+				} else {
 					rechar();
 					try {
-						// Ê®Áù½øÖÆµÄÖ±½Ó×ª»»
 						num = Integer.valueOf(tokenString, 16);
 					} catch (NumberFormatException e) {
 						Err.error(ErrEnum.INT_OF_ERR);
 						break;
 					}
-					// ÕâÀïÑ¡ÔñÖ±½Ó½«Ê®Áù½øÖÆ×ª»¯³ÉÊ®½øÖÆ
 					token = new Token(TokenType.DEC_INT, new Integer(num).toString());
 					return 1;
 				}
@@ -325,7 +299,6 @@ public class LexicalAnalysis {
 			}
 			case ID_STATE: {
 				if (isEOF(ch)) {
-					// ±È½Ï±£Áô×Ö
 					if (tokenString.contentEquals("const")) {
 						token = new Token(TokenType.CONST, tokenString);
 					} else if (tokenString.contentEquals("void")) {
@@ -419,89 +392,174 @@ public class LexicalAnalysis {
 				break;
 			}
 			case PLUS_STATE: {
-				rechar();
 				token = new Token(TokenType.PLUS, tokenString);
-				return isEOF(ch) ? 0 : 1;
+				if ((isSpace(ch) || isTab(ch) || isLF(ch) || isCR(ch))) {
+					return 1;
+				} else if (isEOF(ch)) {
+					return 0;
+				}
+				rechar();
+				return 1;
 			}
 			case MINUS_STATE: {
-				rechar();
 				token = new Token(TokenType.MINUS, tokenString);
-				return isEOF(ch) ? 0 : 1;
+				if ((isSpace(ch) || isTab(ch) || isLF(ch) || isCR(ch))) {
+					return 1;
+				} else if (isEOF(ch)) {
+					return 0;
+				}
+				rechar();
+				return 1;
 			}
 			case MUL_STATE: {
-				rechar();
 				token = new Token(TokenType.MUL, tokenString);
-				return isEOF(ch) ? 0 : 1;
+				if ((isSpace(ch) || isTab(ch) || isLF(ch) || isCR(ch))) {
+					return 1;
+				} else if (isEOF(ch)) {
+					return 0;
+				}
+				rechar();
+				return 1;
 			}
 			case DIV_STATE: {
-				rechar();
 				token = new Token(TokenType.DIV, tokenString);
-				return isEOF(ch) ? 0 : 1;
+				if ((isSpace(ch) || isTab(ch) || isLF(ch) || isCR(ch))) {
+					return 1;
+				} else if (isEOF(ch)) {
+					return 0;
+				}
+				rechar();
+				return 1;
 			}
 			case E_STATE: {
-				rechar();
 				token = new Token(TokenType.E, tokenString);
-				return isEOF(ch) ? 0 : 1;
+				if ((isSpace(ch) || isTab(ch) || isLF(ch) || isCR(ch))) {
+					return 1;
+				} else if (isEOF(ch)) {
+					return 0;
+				}
+				rechar();
+				return 1;
 			}
 			case L_STATE: {
-				rechar();
 				token = new Token(TokenType.L, tokenString);
-				return isEOF(ch) ? 0 : 1;
+				if ((isSpace(ch) || isTab(ch) || isLF(ch) || isCR(ch))) {
+					return 1;
+				} else if (isEOF(ch)) {
+					return 0;
+				}
+				rechar();
+				return 1;
 			}
 			case LE_STATE: {
-				rechar();
 				token = new Token(TokenType.LE, tokenString);
-				return isEOF(ch) ? 0 : 1;
+				if ((isSpace(ch) || isTab(ch) || isLF(ch) || isCR(ch))) {
+					return 1;
+				} else if (isEOF(ch)) {
+					return 0;
+				}
+				rechar();
+				return 1;
 			}
 			case G_STATE: {
-				rechar();
 				token = new Token(TokenType.G, tokenString);
-				return isEOF(ch) ? 0 : 1;
+				if ((isSpace(ch) || isTab(ch) || isLF(ch) || isCR(ch))) {
+					return 1;
+				} else if (isEOF(ch)) {
+					return 0;
+				}
+				rechar();
+				return 1;
 			}
 			case GE_STATE: {
-				rechar();
 				token = new Token(TokenType.GE, tokenString);
-				return isEOF(ch) ? 0 : 1;
+				if ((isSpace(ch) || isTab(ch) || isLF(ch) || isCR(ch))) {
+					return 1;
+				} else if (isEOF(ch)) {
+					return 0;
+				}
+				rechar();
+				return 1;
 			}
 			case UE_STATE: {
-				rechar();
 				token = new Token(TokenType.UE, tokenString);
-				return isEOF(ch) ? 0 : 1;
+				if ((isSpace(ch) || isTab(ch) || isLF(ch) || isCR(ch))) {
+					return 1;
+				} else if (isEOF(ch)) {
+					return 0;
+				}
+				rechar();
+				return 1;
 			}
 			case EE_STATE: {
-				rechar();
 				token = new Token(TokenType.EE, tokenString);
-				return isEOF(ch) ? 0 : 1;
+				if ((isSpace(ch) || isTab(ch) || isLF(ch) || isCR(ch))) {
+					return 1;
+				} else if (isEOF(ch)) {
+					return 0;
+				}
+				rechar();
+				return 1;
 			}
 			case COMMA_STATE: {
-				rechar();
 				token = new Token(TokenType.COMMA, tokenString);
-				return isEOF(ch) ? 0 : 1;
+				if ((isSpace(ch) || isTab(ch) || isLF(ch) || isCR(ch))) {
+					return 1;
+				} else if (isEOF(ch)) {
+					return 0;
+				}
+				rechar();
+				return 1;
 			}
 			case SEM_STATE: {
-				rechar();
 				token = new Token(TokenType.SEM, tokenString);
-				return isEOF(ch) ? 0 : 1;
+				if ((isSpace(ch) || isTab(ch) || isLF(ch) || isCR(ch))) {
+					return 1;
+				} else if (isEOF(ch)) {
+					return 0;
+				}
+				rechar();
+				return 1;
 			}
 			case LSB_STATE: {
-				rechar();
 				token = new Token(TokenType.LSB, tokenString);
-				return isEOF(ch) ? 0 : 1;
+				if ((isSpace(ch) || isTab(ch) || isLF(ch) || isCR(ch))) {
+					return 1;
+				} else if (isEOF(ch)) {
+					return 0;
+				}
+				rechar();
+				return 1;
 			}
 			case RSB_STATE: {
-				rechar();
 				token = new Token(TokenType.RSB, tokenString);
-				return isEOF(ch) ? 0 : 1;
+				if ((isSpace(ch) || isTab(ch) || isLF(ch) || isCR(ch))) {
+					return 1;
+				} else if (isEOF(ch)) {
+					return 0;
+				}
+				rechar();
+				return 1;
 			}
 			case LLB_STATE: {
-				rechar();
 				token = new Token(TokenType.LLB, tokenString);
-				return isEOF(ch) ? 0 : 1;
+				if ((isSpace(ch) || isTab(ch) || isLF(ch) || isCR(ch))) {
+					return 1;
+				} else if (isEOF(ch)) {
+					return 0;
+				}
+				rechar();
+				return 1;
 			}
 			case RLB_STATE: {
-				rechar();
 				token = new Token(TokenType.RLB, tokenString);
-				return isEOF(ch) ? 0 : 1;
+				if ((isSpace(ch) || isTab(ch) || isLF(ch) || isCR(ch))) {
+					return 1;
+				} else if (isEOF(ch)) {
+					return 0;
+				}
+				rechar();
+				return 1;
 			}
 			default: {
 				Err.error(ErrEnum.INPUT_ERR);

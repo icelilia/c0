@@ -2,7 +2,7 @@ package error;
 
 public enum ErrEnum {
 
-	PARA_ERR, // 参数错误
+	CLI_PARA_ERR, // 参数错误
 	INPUT_FILE_ERR, // 输入文件不存在
 	OUTPUT_FILE_ERR, // 无法创建输出文件
 
@@ -15,9 +15,9 @@ public enum ErrEnum {
 
 	EOF_ERR, // 分析中途遇到EOF
 
-	ID_ERR, // ID错误，缺少标识符
+	NEED_ID_ERR, // ID错误，缺少标识符
 
-	UK_TYPE_ERR, // 不支持的数据类型
+	US_TYPE_ERR, // 不支持的数据类型
 
 	CONST_DECL_ERR, // 常量声明时语法错误
 
@@ -56,6 +56,8 @@ public enum ErrEnum {
 	FUNC_PARA_ERR, // 函数调用错误
 	
 	VOID_FUNC_CALL_ERR, // 表达式中调用返回值为空的函数
+	
+	NO_MAIN_ERR, // 没有main函数
 
 	ErrNoBegin, ErrNoEnd, ErrNeedIdentifier, ErrConstantNeedValue, ErrNoSemicolon, ErrInvalidVariableDeclaration,
 	ErrIncompleteExpression, ErrNotDeclared, ErrAssignToConstant, ErrDuplicateDeclaration, ErrNotInitialized,

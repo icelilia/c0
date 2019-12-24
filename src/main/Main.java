@@ -34,7 +34,7 @@ public class Main {
 			if (args[0].contentEquals("-h")) {
 				h();
 			} else {
-				Err.error(ErrEnum.PARA_ERR);
+				Err.error(ErrEnum.CLI_PARA_ERR);
 			}
 		}
 		// 两个参数时，outputPath为默认
@@ -45,7 +45,7 @@ public class Main {
 			} else if (args[0].contentEquals("-c")) {
 				c(inputPath, outputPath);
 			} else {
-				Err.error(ErrEnum.PARA_ERR);
+				Err.error(ErrEnum.CLI_PARA_ERR);
 			}
 		}
 		// 两个参数时，outputPath为指定路径
@@ -57,10 +57,10 @@ public class Main {
 			} else if (args[0].contentEquals("-c") && args[2].contentEquals("-o")) {
 				c(inputPath, outputPath);
 			} else {
-				Err.error(ErrEnum.PARA_ERR);
+				Err.error(ErrEnum.CLI_PARA_ERR);
 			}
 		} else {
-			Err.error(ErrEnum.PARA_ERR);
+			Err.error(ErrEnum.CLI_PARA_ERR);
 		}
 
 	}

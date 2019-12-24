@@ -71,8 +71,15 @@ public class SyntaxAnalysis {
 	// 语法分析的入口
 	public FuncTable syntaxAnalysis() {
 		if (analyseC0Program() == 1) {
-			System.out.println("语法分析完成");
-			return funcTable;
+			// 检查是否有main函数
+			for (Func func : funcTable.getFuncList()) {
+				if (func.name.contentEquals("main")) {
+					System.out.println("语法分析完成");
+					return funcTable;
+				}
+			}
+			Err.error(ErrEnum.NO_MAIN_ERR);
+			return null;
 		} else {
 			System.out.println("语法分析失败");
 			return null;
@@ -115,7 +122,7 @@ public class SyntaxAnalysis {
 			}
 			// INT后肯定是一个ID，否则报错
 			if (token.getType() != TokenType.ID) {
-				Err.error(ErrEnum.ID_ERR);
+				Err.error(ErrEnum.NEED_ID_ERR);
 				return -2;
 			}
 			token = getToken();
@@ -138,7 +145,7 @@ public class SyntaxAnalysis {
 			return 1;
 		}
 		// 与二者的头符号集都不匹配，报错
-		Err.error(ErrEnum.UK_TYPE_ERR);
+		Err.error(ErrEnum.US_TYPE_ERR);
 		return -2;
 	}
 
@@ -228,7 +235,7 @@ public class SyntaxAnalysis {
 			}
 			// 不支持的变量类型
 			else {
-				Err.error(ErrEnum.UK_TYPE_ERR);
+				Err.error(ErrEnum.US_TYPE_ERR);
 				return -2;
 			}
 		}
@@ -671,7 +678,7 @@ public class SyntaxAnalysis {
 			}
 			// 缺少标识符
 			else {
-				Err.error(ErrEnum.ID_ERR);
+				Err.error(ErrEnum.NEED_ID_ERR);
 				return -2;
 			}
 		}
@@ -782,11 +789,11 @@ public class SyntaxAnalysis {
 					return 1;
 				}
 				// 缺少ID
-				Err.error(ErrEnum.ID_ERR);
+				Err.error(ErrEnum.NEED_ID_ERR);
 				return -2;
 			}
 			// 不支持的数据类型
-			Err.error(ErrEnum.UK_TYPE_ERR);
+			Err.error(ErrEnum.US_TYPE_ERR);
 			return -2;
 		}
 		// 非CONST参数
@@ -811,11 +818,11 @@ public class SyntaxAnalysis {
 				return 1;
 			}
 			// 缺少ID
-			Err.error(ErrEnum.ID_ERR);
+			Err.error(ErrEnum.NEED_ID_ERR);
 			return -2;
 		}
 		// 暂定不支持的数据（参数）类型
-		Err.error(ErrEnum.UK_TYPE_ERR);
+		Err.error(ErrEnum.US_TYPE_ERR);
 		return -2;
 	}
 
@@ -1311,7 +1318,7 @@ public class SyntaxAnalysis {
 			return -2;
 		}
 		if (token.getType() != TokenType.ID) {
-			Err.error(ErrEnum.ID_ERR);
+			Err.error(ErrEnum.NEED_ID_ERR);
 			return -2;
 		}
 		String name = token.getValue();
