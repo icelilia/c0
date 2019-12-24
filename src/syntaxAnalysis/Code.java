@@ -15,6 +15,12 @@ public class Code {
 
 	@Override
 	public String toString() {
-		return "\t" + index.toString() + "\t" + opcode + "\t" + operands1 + "\t" + operands2 + "\n";
+		if (operands1.contentEquals("")) {
+			return " " + index.toString() + " " + opcode + "\n";
+		}
+		if (operands2.contentEquals("")) {
+			return " " + index.toString() + " " + opcode + " " + operands1 + "\n";
+		}
+		return " " + index.toString() + " " + opcode + " " + operands1 + " , " + operands2 + "\n";
 	}
 }

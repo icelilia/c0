@@ -21,6 +21,10 @@ public class Text {
 	// 关于回填
 	// 得到顶层指令的index
 	int getIndex() {
+		//
+		if (codeList.size() == 0) {
+			return -1;
+		}
 		return codeList.get(codeList.size() - 1).index;
 	}
 

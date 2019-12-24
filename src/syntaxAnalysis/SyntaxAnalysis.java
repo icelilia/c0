@@ -6,6 +6,10 @@ import lexicalAnalysis.Token;
 import lexicalAnalysis.TokenType;
 import error.*;
 
+// Author：Andersen
+// 语法分析和语义分析，以及中间代码生成耦合
+// 比较复杂
+
 public class SyntaxAnalysis {
 
 	private ArrayList<Token> tokenList;
@@ -30,13 +34,6 @@ public class SyntaxAnalysis {
 
 	// 栈偏移
 	private int offset;
-
-	// 需要回填的jmp语句的index
-	private int jmp;
-	// stm1的index
-	private int label1;
-	// stm2的index
-	private int label2;
 
 	// 调用者提供的参数个数
 	private int callParaNum;
@@ -973,6 +970,7 @@ public class SyntaxAnalysis {
 	// <condition-statement> ::=
 	// 'if' '(' <condition> ')' <statement> ['else' <statement>]
 	private int analyseConditionStatement(int no) {
+		JumpOffset JMP = new JumpOffset(0), LABEL1 = new JumpOffset(0), LABEL2 = new JumpOffset(0);
 		token = getToken();
 		if (token == null) {
 			return 0;
@@ -990,7 +988,7 @@ public class SyntaxAnalysis {
 				return -2;
 			}
 			// <condition>
-			if (analyseCondition(no) != 1) {
+			if (analyseCondition(no, JMP) != 1) {
 				Err.error(ErrEnum.FUNC_STATMENT_ERR);
 				return -2;
 			}
@@ -1012,38 +1010,38 @@ public class SyntaxAnalysis {
 			token = getToken();
 			if (token == null) {
 				// 这里求label1的位置
-				label1 = text.getIndex() + 1;
+				LABEL1.label = text.getIndex() + 1;
 				// 回填jcond指令
-				text.reWrite(jmp, "", new Integer(label1).toString(), "");
+				text.reWrite(JMP.label, "", new Integer(LABEL1.label).toString(), "");
 				return 1;
 			}
 			if (token.getType() != TokenType.ELSE) {
 				reToken();
 				// 这里求label1的位置
-				label1 = text.getIndex() + 1;
+				LABEL1.label = text.getIndex() + 1;
 				// 回填jcond指令
-				text.reWrite(jmp, "", new Integer(label1).toString(), "");
+				text.reWrite(JMP.label, "", new Integer(LABEL1.label).toString(), "");
 				return 1;
 			}
 			// 'else'
 			// 先加一条无条件跳转指令
-			// label2先置空
+			// LABEL2先置空
 			text.addCode("jmp", "", "");
 			// 再求label1的位置
-			label1 = text.getIndex() + 1;
+			LABEL1.label = text.getIndex() + 1;
 			// 回填第一个jcond指令
-			text.reWrite(jmp, "", new Integer(label1).toString(), "");
+			text.reWrite(JMP.label, "", new Integer(LABEL1.label).toString(), "");
 			// 记录第二个jmp指令的位置
-			jmp = text.getIndex();
+			JMP.label = text.getIndex();
 			// <statement> stm2
 			if (analyseStatement(no) != 1) {
 				Err.error(ErrEnum.FUNC_STATMENT_ERR);
 				return -2;
 			}
 			// 求label2的位置
-			label2 = text.getIndex() + 1;
+			LABEL2.label = text.getIndex() + 1;
 			// 回填第二个jmp指令
-			text.reWrite(jmp, "", new Integer(label2).toString(), "");
+			text.reWrite(JMP.label, "", new Integer(LABEL2.label).toString(), "");
 			return 1;
 		}
 		reToken();
@@ -1051,7 +1049,7 @@ public class SyntaxAnalysis {
 	}
 
 	// <condition> ::= <expression>[<relational-operator><expression>]
-	private int analyseCondition(int no) {
+	private int analyseCondition(int no, JumpOffset JMP) {
 		if (analyseExpression(no) == 1) {
 			token = getToken();
 			if (token == null) {
@@ -1088,7 +1086,7 @@ public class SyntaxAnalysis {
 					Err.error(ErrEnum.SP_ERR);
 					break;
 				}
-				jmp = text.getIndex();
+				JMP.label = text.getIndex();
 				return 1;
 			} else {
 				reToken();
@@ -1098,7 +1096,7 @@ public class SyntaxAnalysis {
 				// 暂时先不写label
 				text.addCode("je", "", "");
 				// 记录jmp语句的位置，随后回填
-				jmp = text.getIndex();
+				JMP.label = text.getIndex();
 				return 1;
 			}
 		}
@@ -1107,6 +1105,7 @@ public class SyntaxAnalysis {
 
 	// <loop-statement> ::= 'while' '(' <condition> ')' <statement>
 	private int analyseLoopStatement(int no) {
+		JumpOffset JMP = new JumpOffset(0), LABEL1 = new JumpOffset(0), LABEL2 = new JumpOffset(0);
 		token = getToken();
 		if (token == null) {
 			return 0;
@@ -1124,8 +1123,8 @@ public class SyntaxAnalysis {
 				return -2;
 			}
 			// 记录label2固定跳转
-			label2 = text.getIndex() + 1;
-			if (analyseCondition(no) != 1) {
+			LABEL2.label = text.getIndex() + 1;
+			if (analyseCondition(no, JMP) != 1) {
 				Err.error(ErrEnum.FUNC_STATMENT_ERR);
 				return -2;
 			}
@@ -1143,9 +1142,9 @@ public class SyntaxAnalysis {
 				Err.error(ErrEnum.FUNC_STATMENT_ERR);
 				return -2;
 			}
-			text.addCode("jmp", new Integer(label2).toString(), "");
-			label1 = text.getIndex() + 1;
-			text.reWrite(jmp, "", new Integer(label1).toString(), "");
+			text.addCode("jmp", new Integer(LABEL2.label).toString(), "");
+			LABEL1.label = text.getIndex() + 1;
+			text.reWrite(JMP.label, "", new Integer(LABEL1.label).toString(), "");
 			return 1;
 		}
 		reToken();

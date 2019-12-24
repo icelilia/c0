@@ -13,6 +13,9 @@ import syntaxAnalysis.Func;
 import syntaxAnalysis.SyntaxAnalysis;
 import syntaxAnalysis.Text;
 
+// 项目采用GBK编码，所以注释的观看可能有点问题
+// GBK codeing
+
 public class Main {
 
 	static String inputPath;
@@ -141,7 +144,7 @@ public class Main {
 		String temp;
 		char[] tempArr;
 		// 常量表表头
-		temp = ".constants:" + "\n" + "#" + "\t" + "index" + "\t" + "type" + "\t" + "value" + "\n";
+		temp = ".constants:" + "\n";
 		tempArr = temp.toCharArray();
 		try {
 			for (char ch : tempArr) {
@@ -155,7 +158,7 @@ public class Main {
 		Integer funcIndex = 0;
 		int i;
 		for (i = 1; i < funcList.size(); i++) {
-			temp = temp + "\t" + funcIndex.toString() + "\t" + "S" + "\t" + funcList.get(i).name + "\n";
+			temp = temp + " " + funcIndex.toString() + " " + "S" + " " + "\"" + funcList.get(i).name + "\"" + "\n";
 			funcIndex = funcIndex + 1;
 		}
 		tempArr = temp.toCharArray();
@@ -171,7 +174,7 @@ public class Main {
 		ArrayList<Code> codeList;
 
 		// 启动表表头
-		temp = ".start:" + "\n" + "#" + "\t" + "index" + "\t" + "op" + "\t" + "on1" + "\t" + "on2" + "\n";
+		temp = ".start:" + "\n";
 		tempArr = temp.toCharArray();
 		try {
 			for (char ch : tempArr) {
@@ -197,7 +200,7 @@ public class Main {
 		}
 
 		// 函数表表头
-		temp = ".functions:" + "\n" + "#" + "\t" + "index" + "\t" + "_index" + "\t" + "para" + "\t" + "level" + "\n";
+		temp = ".functions:" + "\n";
 		tempArr = temp.toCharArray();
 		try {
 			for (char ch : tempArr) {
@@ -210,8 +213,8 @@ public class Main {
 		temp = "";
 		funcIndex = 0;
 		for (i = 1; i < funcList.size(); i++) {
-			temp = temp + "\t" + funcIndex.toString() + "\t" + funcIndex.toString() + "\t"
-					+ funcList.get(i).paraNum.toString() + "\t" + "1" + "\n";
+			temp = temp + " " + funcIndex.toString() + " " + funcIndex.toString() + " "
+					+ funcList.get(i).paraNum.toString() + " " + "1" + "\n";
 			funcIndex = funcIndex + 1;
 		}
 		tempArr = temp.toCharArray();
@@ -224,15 +227,6 @@ public class Main {
 		}
 
 		// 函数体表头
-		temp = "#" + "\t" + "index" + "\t" + "op" + "\t" + "on1" + "\t" + "on2" + "\n";
-		tempArr = temp.toCharArray();
-		try {
-			for (char ch : tempArr) {
-				fileOutputStreamS.write(ch);
-			}
-		} catch (Exception e) {
-			Err.error(ErrEnum.OUTPUT_ERR);
-		}
 		temp = "";
 		funcIndex = 0;
 		for (i = 1; i < funcList.size(); i++) {
