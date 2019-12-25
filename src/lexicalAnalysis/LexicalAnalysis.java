@@ -7,9 +7,6 @@ import java.util.ArrayList;
 
 import error.*;
 
-// Author：Andersen
-// 词法分析比较简单，就没有加太多注释
-
 public class LexicalAnalysis {
 	BufferedInputStream inputStream;
 
@@ -19,28 +16,29 @@ public class LexicalAnalysis {
 	int num;
 	Token token;
 
-	int row = 1;
-	int col = 1;
-
 	boolean isComment;
 
 	DFAState curruntState;
 
-	ArrayList<Token> tokenList = new ArrayList<Token>(512);
+	ArrayList<Token> tokenList = new ArrayList<Token>();
 
 	public LexicalAnalysis(FileInputStream fileInputStream) {
 		this.inputStream = new BufferedInputStream(fileInputStream);
 	}
 
 	public ArrayList<Token> lexicalAnalysis() {
-		// EOF返回0后跳出
 		while (true) {
 			curruntState = DFAState.INIT_STATE;
+			token = null;
 			if (getToken() == 0) {
-				tokenList.add(token);
+				if (token != null) {
+					tokenList.add(token);
+				}
 				break;
 			} else {
-				tokenList.add(token);
+				if (token != null) {
+					tokenList.add(token);
+				}
 			}
 		}
 		return tokenList;
@@ -52,7 +50,7 @@ public class LexicalAnalysis {
 			inputStream.mark(1);
 			temp = (char) inputStream.read();
 		} catch (IOException e) {
-			System.err.println("文件流错误");
+			System.err.println("FileStream err");
 			System.exit(-1);
 		}
 		return temp;
@@ -99,10 +97,7 @@ public class LexicalAnalysis {
 		return (65 <= c && c <= 70) || (97 <= c && c <= 102) || isDigit(c);
 	}
 
-	// 遇到EOF返回0
-	// 正常返回1
 	private int getToken() {
-		// 初始化已储存字符串
 		tokenString = "";
 		while (true) {
 			ch = getchar();
@@ -111,48 +106,30 @@ public class LexicalAnalysis {
 				if (isEOF(ch)) {
 					return 0;
 				}
-				// 空白字符直接跳过
 				if (isSpace(ch) || isTab(ch) || isLF(ch) || isCR(ch)) {
 					break;
-				}
-				// 数字
-				else if (isDigit(ch)) {
-					// 非0数字
+				} else if (isDigit(ch)) {
 					if (ch != '0') {
 						curruntState = DFAState.DEC_INT_STATE;
-					}
-					// 数字0，看情况
-					// 十六进制前导0
-					// 十进制数0
-					else {
+					} else {
 						ch = getchar();
-						// 十六进制前导0
 						if (ch == 'x' || ch == 'X') {
 							ch = getchar();
-							// 这里不用将"0x"加至储存的字符串中
 							if (isHex(ch)) {
 								curruntState = DFAState.HEX_INT_STATE;
-							}
-							// "0x"后面必须跟十六进制中的字符
-							else {
+							} else {
 								Err.error(ErrEnum.INPUT_ERR);
 							}
-						}
-						// 十进制0直接处理
-						else {
+						} else {
 							rechar();
 							tokenString = tokenString + '0';
 							token = new Token(TokenType.DEC_INT, tokenString);
 							return isEOF(ch) ? 0 : 1;
 						}
 					}
-				}
-				// 字母
-				else if (isLetter(ch)) {
+				} else if (isLetter(ch)) {
 					curruntState = DFAState.ID_STATE;
-				}
-				// 其余字符
-				else {
+				} else {
 					switch (ch) {
 					case '+':
 						curruntState = DFAState.PLUS_STATE;
@@ -167,16 +144,12 @@ public class LexicalAnalysis {
 						curruntState = DFAState.DIV_STATE;
 						break;
 					case '=':
-						// 预读
 						temp = getchar();
-						// ==
 						if (temp == '=') {
 							tokenString = tokenString + ch;
 							ch = temp;
 							curruntState = DFAState.EE_STATE;
-						}
-						// =
-						else {
+						} else {
 							rechar();
 							curruntState = DFAState.E_STATE;
 						}
@@ -234,7 +207,6 @@ public class LexicalAnalysis {
 					case '}':
 						curruntState = DFAState.RLB_STATE;
 						break;
-					// 非法字符集
 					default:
 						Err.error(ErrEnum.INPUT_ERR);
 						break;

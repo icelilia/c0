@@ -71,14 +71,14 @@ public class SyntaxAnalysis {
 			// 检查是否有main函数
 			for (Func func : funcTable.getFuncList()) {
 				if (func.name.contentEquals("main")) {
-					System.out.println("语法分析完成");
+					System.out.println("success");
 					return funcTable;
 				}
 			}
 			Err.error(ErrEnum.NO_MAIN_ERR);
 			return null;
 		} else {
-			System.out.println("语法分析失败");
+			System.out.println("fail");
 			return null;
 		}
 	}
@@ -298,7 +298,7 @@ public class SyntaxAnalysis {
 			// 查找是否有重定义
 			// 注意，重定义只在本块中查找，不向上递归
 			// 同时不能与函数名重名
-			if (block.containsKey(name)) {
+			if (block.containsID(name)) {
 				Err.error(ErrEnum.ID_REDECL_ERR);
 				return -2;
 			}
@@ -363,7 +363,7 @@ public class SyntaxAnalysis {
 			String name = token.getValue();
 			// 查找是否有重定义
 			// 同样，只在本块中查找
-			if (block.containsKey(name)) {
+			if (block.containsID(name)) {
 				Err.error(ErrEnum.ID_REDECL_ERR);
 				return -2;
 			}
@@ -777,7 +777,7 @@ public class SyntaxAnalysis {
 				if (token.getType() == TokenType.ID) {
 					String name = token.getValue();
 					// 检查重定义
-					if (block.containsKey(name)) {
+					if (block.containsID(name)) {
 						Err.error(ErrEnum.ID_REDECL_ERR);
 						return -2;
 					}
@@ -805,7 +805,7 @@ public class SyntaxAnalysis {
 			if (token.getType() == TokenType.ID) {
 				String name = token.getValue();
 				// 检查重定义
-				if (block.containsKey(name)) {
+				if (block.containsID(name)) {
 					Err.error(ErrEnum.ID_REDECL_ERR);
 					return -2;
 				}

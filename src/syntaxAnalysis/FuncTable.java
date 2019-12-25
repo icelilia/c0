@@ -8,12 +8,10 @@ public class FuncTable {
 	FuncTable() {
 	}
 
-	// 添加函数
 	void addFunc(Func func) {
 		funcList.add(func);
 	}
 
-	// 返回是否有该函数
 	boolean containsFunc(String name) {
 		for (Func func : funcList) {
 			if (func.name.contentEquals(name)) {
@@ -23,7 +21,6 @@ public class FuncTable {
 		return false;
 	}
 
-	// 返回函数的index
 	Integer getIndex(String name) {
 		int i;
 		for (i = 0; i < funcList.size(); i++) {
@@ -34,7 +31,6 @@ public class FuncTable {
 		return null;
 	}
 
-	// 返回函数的引用
 	Func getFunc(String name) {
 		int i;
 		for (i = 0; i < funcList.size(); i++) {

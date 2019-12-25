@@ -7,28 +7,23 @@ public class Text {
 	private int index = 0;
 	private ArrayList<Code> codeList = new ArrayList<Code>();
 
-	// name即为函数名
 	Text(String name) {
 		this.name = name;
 	}
 
-	// 添加指令
 	void addCode(String opcode, String operands1, String operands2) {
 		Code code = new Code(index++, opcode, operands1, operands2);
 		codeList.add(code);
 	}
 
-	// 关于回填
-	// 得到顶层指令的index
+	// get top index
 	int getIndex() {
-		//
 		if (codeList.size() == 0) {
 			return -1;
 		}
 		return codeList.get(codeList.size() - 1).index;
 	}
 
-	// 根据index来更改指令
 	void reWrite(int index, String opcode, String operands1, String operands2) {
 		Code code = codeList.get(index);
 		if (!opcode.contentEquals("")) {
@@ -42,12 +37,10 @@ public class Text {
 		}
 	}
 
-	// 得到名字
 	public String getName() {
 		return this.name;
 	}
 
-	// 返回指令
 	public ArrayList<Code> getCodesList() {
 		return codeList;
 	}

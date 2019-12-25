@@ -1,20 +1,15 @@
 package main;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.DataOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 
 import error.*;
 import lexicalAnalysis.*;
-import syntaxAnalysis.Code;
-import syntaxAnalysis.Func;
-import syntaxAnalysis.SyntaxAnalysis;
-import syntaxAnalysis.Text;
-
-// 项目采用GBK编码，所以注释的观看可能有点问题
-// GBK codeing
+import syntaxAnalysis.*;
 
 public class Main {
 
@@ -22,26 +17,21 @@ public class Main {
 	static String outputPath = "out";
 	static FileInputStream fileInputStream;
 	static FileOutputStream fileOutputStream;
-	static FileOutputStream fileOutputStreamS;
+
 	static ArrayList<Token> tokenList;
 	static ArrayList<Func> funcList;
 
 	public static void main(String[] args) {
 		int argsLength = args.length;
-		// 不提供任何参数时，默认为"-h"
 		if (argsLength == 0) {
 			h();
-		}
-		// 一个参数时，只能为"-h"
-		else if (argsLength == 1) {
+		} else if (argsLength == 1) {
 			if (args[0].contentEquals("-h")) {
 				h();
 			} else {
 				Err.error(ErrEnum.CLI_PARA_ERR);
 			}
-		}
-		// 两个参数时，outputPath为默认
-		else if (argsLength == 2) {
+		} else if (argsLength == 2) {
 			inputPath = args[1];
 			if (args[0].contentEquals("-s")) {
 				s(inputPath, outputPath);
@@ -50,9 +40,7 @@ public class Main {
 			} else {
 				Err.error(ErrEnum.CLI_PARA_ERR);
 			}
-		}
-		// 两个参数时，outputPath为指定路径
-		else if (argsLength == 4) {
+		} else if (argsLength == 4) {
 			inputPath = args[1];
 			outputPath = args[3];
 			if (args[0].contentEquals("-s") && args[2].contentEquals("-o")) {
@@ -65,14 +53,12 @@ public class Main {
 		} else {
 			Err.error(ErrEnum.CLI_PARA_ERR);
 		}
-
 	}
 
 	private static void h() {
-		System.out.println("Usage:\n" + "  cc0 [options] input [-o file]\n" + "or\n" + "  cc0 [-h]\n" + "options:\n"
-				+ "  -s        将输入的c0源代码翻译为文本汇编文件\n" + "  -c        将输入的c0源代码翻译为二进制目标文件\n"
-				+ "  -h        显示关于编译器使用的帮助\n" + "  -o file   输出到指定的文件 file\n" + "\n" + "不提供任何参数时，默认为 -h\n"
-				+ "提供input不提供-o file时，默认为-o out");
+		System.out.println("Usage:\n" + "  cc0 [options] input [-o file]\n" + "or \n" + "  cc0 [-h]\n" + "Options:\n"
+				+ "  -s        c0 code to .s\n" + "  -c        c0 code to .o\n" + "  -h        for help\n"
+				+ "  -o file   output to specified file\n" + "\n" + "default: -h\n" + "default output path: out");
 	}
 
 	private static void s(String inputPath, String outputPath) {
@@ -86,74 +72,61 @@ public class Main {
 		} catch (FileNotFoundException e) {
 			Err.error(ErrEnum.OUTPUT_FILE_ERR);
 		}
-		try {
-			fileOutputStreamS = new FileOutputStream(outputPath + ".s");
-		} catch (FileNotFoundException e) {
-			Err.error(ErrEnum.OUTPUT_FILE_ERR);
-		}
 
 		LexicalAnalysis lexicalAnalysis = new LexicalAnalysis(fileInputStream);
 		tokenList = lexicalAnalysis.lexicalAnalysis();
-		viewTokenList(); // 写出tokenList至output.txt
 		SyntaxAnalysis syntaxAnalysis = new SyntaxAnalysis(tokenList);
-		// 获得funcList
 		funcList = syntaxAnalysis.syntaxAnalysis().getFuncList();
 		viewS();
 
 		try {
 			fileInputStream.close();
 			fileOutputStream.close();
-			fileOutputStreamS.close();
 		} catch (IOException e) {
-			System.err.println("文件流关闭出错");
+			System.err.println("FileOutputStream close err");
 			System.exit(-1);
 		}
 	}
 
 	private static void c(String inputPath, String outputPath) {
-		System.out.println("将输入的c0源代码翻译为二进制目标文件");
-		System.out.println("inputPath：" + inputPath);
-		System.out.println("outputPath：" + outputPath);
-	}
+		try {
+			fileInputStream = new FileInputStream(inputPath);
+		} catch (FileNotFoundException e) {
+			Err.error(ErrEnum.INPUT_FILE_ERR);
+		}
+		try {
+			fileOutputStream = new FileOutputStream(outputPath);
+		} catch (FileNotFoundException e) {
+			Err.error(ErrEnum.OUTPUT_FILE_ERR);
+		}
 
-	private static void viewTokenList() {
-		String temp = "Type" + "\t" + "Value" + "\n";
-		char[] tempArr = temp.toCharArray();
+		LexicalAnalysis lexicalAnalysis = new LexicalAnalysis(fileInputStream);
+		tokenList = lexicalAnalysis.lexicalAnalysis();
+		SyntaxAnalysis syntaxAnalysis = new SyntaxAnalysis(tokenList);
+		funcList = syntaxAnalysis.syntaxAnalysis().getFuncList();
+		viewO();
 		try {
-			for (char ch : tempArr) {
-				fileOutputStream.write(ch);
-			}
+			fileInputStream.close();
+			fileOutputStream.close();
 		} catch (IOException e) {
-			Err.error(ErrEnum.OUTPUT_ERR);
-		}
-		temp = "";
-		for (Token token : tokenList) {
-			temp = temp + token.toString();
-		}
-		tempArr = temp.toCharArray();
-		try {
-			for (char ch : tempArr) {
-				fileOutputStream.write(ch);
-			}
-		} catch (IOException e) {
-			Err.error(ErrEnum.OUTPUT_ERR);
+			System.err.println("FileOutputStream close err");
+			System.exit(-1);
 		}
 	}
 
 	private static void viewS() {
 		String temp;
 		char[] tempArr;
-		// 常量表表头
+		// .constants
 		temp = ".constants:" + "\n";
 		tempArr = temp.toCharArray();
 		try {
 			for (char ch : tempArr) {
-				fileOutputStreamS.write(ch);
+				fileOutputStream.write(ch);
 			}
 		} catch (Exception e) {
 			Err.error(ErrEnum.OUTPUT_ERR);
 		}
-		// 准备常量表正文
 		temp = "";
 		Integer funcIndex = 0;
 		int i;
@@ -164,7 +137,7 @@ public class Main {
 		tempArr = temp.toCharArray();
 		try {
 			for (char ch : tempArr) {
-				fileOutputStreamS.write(ch);
+				fileOutputStream.write(ch);
 			}
 		} catch (Exception e) {
 			Err.error(ErrEnum.OUTPUT_ERR);
@@ -173,17 +146,16 @@ public class Main {
 		Text text;
 		ArrayList<Code> codeList;
 
-		// 启动表表头
+		// .start
 		temp = ".start:" + "\n";
 		tempArr = temp.toCharArray();
 		try {
 			for (char ch : tempArr) {
-				fileOutputStreamS.write(ch);
+				fileOutputStream.write(ch);
 			}
 		} catch (Exception e) {
 			Err.error(ErrEnum.OUTPUT_ERR);
 		}
-		// 准备启动表正文
 		temp = "";
 		text = funcList.get(0).text;
 		codeList = text.getCodesList();
@@ -193,23 +165,22 @@ public class Main {
 		tempArr = temp.toCharArray();
 		try {
 			for (char ch : tempArr) {
-				fileOutputStreamS.write(ch);
+				fileOutputStream.write(ch);
 			}
 		} catch (Exception e) {
 			Err.error(ErrEnum.OUTPUT_ERR);
 		}
 
-		// 函数表表头
+		// .functions
 		temp = ".functions:" + "\n";
 		tempArr = temp.toCharArray();
 		try {
 			for (char ch : tempArr) {
-				fileOutputStreamS.write(ch);
+				fileOutputStream.write(ch);
 			}
 		} catch (Exception e) {
 			Err.error(ErrEnum.OUTPUT_ERR);
 		}
-		// 准备函数表正文
 		temp = "";
 		funcIndex = 0;
 		for (i = 1; i < funcList.size(); i++) {
@@ -220,18 +191,17 @@ public class Main {
 		tempArr = temp.toCharArray();
 		try {
 			for (char ch : tempArr) {
-				fileOutputStreamS.write(ch);
+				fileOutputStream.write(ch);
 			}
 		} catch (Exception e) {
 			Err.error(ErrEnum.OUTPUT_ERR);
 		}
 
-		// 函数体表头
+		// function body
 		temp = "";
 		funcIndex = 0;
 		for (i = 1; i < funcList.size(); i++) {
 			codeList = funcList.get(i).text.getCodesList();
-			// 函数头
 			temp = temp + ".F" + funcIndex.toString() + ":" + "\n";
 			for (Code code : codeList) {
 				temp = temp + code.toString();
@@ -240,13 +210,93 @@ public class Main {
 			tempArr = temp.toCharArray();
 			try {
 				for (char ch : tempArr) {
-					fileOutputStreamS.write(ch);
+					fileOutputStream.write(ch);
 				}
 			} catch (Exception e) {
 				Err.error(ErrEnum.OUTPUT_ERR);
 			}
 			funcIndex = funcIndex + 1;
 			temp = "";
+		}
+	}
+
+	private static void viewO() {
+		DataOutputStream out = new DataOutputStream(fileOutputStream);
+		// magic
+		int magic = 0x43303A29;
+		try {
+			out.writeInt(magic);
+		} catch (IOException e) {
+			Err.error(ErrEnum.OUTPUT_ERR);
+		}
+		// version
+		int version = 0x00000001;
+		try {
+			out.writeInt(version);
+		} catch (IOException e) {
+			Err.error(ErrEnum.OUTPUT_ERR);
+		}
+		// constants_count
+		int constantsCount = (funcList.size() - 1);
+		try {
+			out.writeShort(constantsCount);
+		} catch (IOException e) {
+			Err.error(ErrEnum.OUTPUT_ERR);
+		}
+		// constant_info
+		byte type = 0x00; // just String
+		int length;
+		String name; // just name of function
+		try {
+			for (int i = 0; i < constantsCount; i++) {
+				name = funcList.get(i + 1).name;
+				length = name.length();
+				// type
+				out.writeByte(type);
+				// length
+				out.writeShort(length);
+				// value
+				out.write(name.getBytes("ASCII"));
+			}
+		} catch (IOException e) {
+			Err.error(ErrEnum.OUTPUT_ERR);
+		}
+		// start_code
+		int instructionsCount = funcList.get(0).text.getCodesList().size();
+		try {
+			out.writeShort(instructionsCount);
+			ArrayList<Code> codeList = funcList.get(0).text.getCodesList();
+			for (int i = 0; i < instructionsCount; i++) {
+				out.write(codeList.get(i).toHexSeq());
+			}
+		} catch (IOException e) {
+			Err.error(ErrEnum.OUTPUT_ERR);
+		}
+		// function_count
+		try {
+			out.writeShort(constantsCount);
+		} catch (IOException e) {
+			Err.error(ErrEnum.OUTPUT_ERR);
+		}
+		// function_info
+		try {
+			for (int i = 1; i < funcList.size(); i++) {
+				out.writeShort(i - 1);
+				out.writeShort(funcList.get(i).paraNum);
+				out.writeShort(1);
+				ArrayList<Code> codeList = funcList.get(i).text.getCodesList();
+				out.writeShort(codeList.size());
+				for (int j = 0; j < codeList.size(); j++) {
+					out.write(codeList.get(j).toHexSeq());
+				}
+			}
+		} catch (Exception e) {
+			Err.error(ErrEnum.OUTPUT_ERR);
+		}
+		try {
+			out.close();
+		} catch (IOException e) {
+			Err.error(ErrEnum.OUTPUT_ERR);
 		}
 	}
 }
