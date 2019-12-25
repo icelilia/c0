@@ -11,6 +11,8 @@ import error.*;
 import lexicalAnalysis.*;
 import syntaxAnalysis.*;
 
+// Author: Andersen.
+// Notice: Please use "javac -encoding GBK [-d outputPath] -cp . @javaFile.txt" to compile.
 public class Main {
 
 	static String inputPath;
