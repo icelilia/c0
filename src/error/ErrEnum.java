@@ -2,11 +2,21 @@ package error;
 
 public enum ErrEnum {
 
-	CLI_PARA_ERR, INPUT_FILE_ERR, OUTPUT_FILE_ERR,
+	CLI_PARA_ERR,
 
-	INPUT_ERR, OUTPUT_ERR,
+	INPUT_FILE_ERR,
+
+	OUTPUT_FILE_ERR,
+
+	INPUT_ERR,
+
+	OUTPUT_ERR,
+
+	HEX_INT_ERR,
 
 	INT_OF_ERR,
+
+	COMMENT_ERR,
 
 	SP_ERR,
 
@@ -48,7 +58,7 @@ public enum ErrEnum {
 
 	RLB_ERR,
 
-	FUNC_STATMENT_ERR,
+	FUNC_STATEMENT_ERR,
 
 	FUNC_PARA_ERR,
 

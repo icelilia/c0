@@ -1,3 +1,4 @@
+å®Œæ•´ç‰ˆc0è¯­æ³•ï¼š
 <digit> ::= 
     '0'|<nonzero-digit>
 <nonzero-digit> ::= 
@@ -48,6 +49,13 @@
 <exponent> ::= 
     ('e'|'E')[<sign>]<digit-seq>
    
+    
+<unary-operator>          ::= '+' | '-'
+<additive-operator>       ::= '+' | '-'
+<multiplicative-operator> ::= '*' | '/'
+<relational-operator>     ::= '<' | '<=' | '>' | '>=' | '!=' | '=='
+<assignment-operator>     ::= '='   
+
     
 <single-line-comment> ::=
     '//'{<any-char>}<LF>
@@ -143,24 +151,18 @@
 <assignment-expression> ::= 
     <identifier><assignment-operator><expression>
     
-#±í´ïÊ½ÎÄ·¨£¨ÓÉÓÚ»ù´¡C0Ö»ÓÐintÕâÒ»ÖÖÓÐÖµÀàÐÍ£¬Òò´Ë²»Éæ¼°ÀàÐÍ×ª»»µÄÎÊÌâ£©
-
-##±í´ïÊ½
-<expression> ::= <additive-expression>
-
-##¼Ó·¨ÐÍ±í´ïÊ½
-<additive-expression> ::= <multiplicative-expression>{<additive-operator><multiplicative-expression>}
-
-##³Ë·¨ÐÍ±í´ïÊ½
-<multiplicative-expression> ::= <cast-expression>{<multiplicative-operator><cast-expression>}
-
-##³Ë·¨Òò×Ó£¨ÕâÀï»ù´¡C0²»Éæ¼°ÀàÐÍ×ª»»£©
-<cast-expression> ::= {'('<type-specifier>')'}<unary-expression>
-
-##Ò»Ôª±í´ïÊ½
-<unary-expression> ::= [<unary-operator>]<primary-expression>
-
-##»ù´¡±í´ïÊ½£¨»ù´¡C0²»°üº¬<char-literal>ºÍ<floating-literal>£©
+   
+  
+<expression> ::= 
+    <additive-expression>
+<additive-expression> ::= 
+     <multiplicative-expression>{<additive-operator><multiplicative-expression>}
+<multiplicative-expression> ::= 
+     <cast-expression>{<multiplicative-operator><cast-expression>}
+<cast-expression> ::=
+    {'('<type-specifier>')'}<unary-expression>
+<unary-expression> ::=
+    [<unary-operator>]<primary-expression>
 <primary-expression> ::=  
      '('<expression>')' 
     |<identifier>
@@ -169,28 +171,7 @@
     |<floating-literal>
     |<function-call>
 
-#²Ù×÷·ûÎÄ·¨
-
-##·ûºÅ²Ù×÷·û£¨Õý¸ººÅ£©
-<unary-operator>          ::= '+' | '-'
-
-##¼Ó·¨²Ù×÷·û
-<additive-operator>       ::= '+' | '-'
-
-##³Ë·¨²Ù×÷·û
-<multiplicative-operator> ::= '*' | '/'
-
-##¹ØÏµ²Ù×÷·û
-<relational-operator>     ::= '<' | '<=' | '>' | '>=' | '!=' | '=='
-
-##¸³Öµ²Ù×÷·û
-<assignment-operator>     ::= '='   
-
-
-#º¯Êýµ÷ÓÃÎÄ·¨
-
-##º¯Êýµ÷ÓÃ
-<function-call> ::= <identifier> '(' [<expression-list>] ')'
-
-##²ÎÊýÁÐ±í
-<expression-list> ::= <expression>{','<expression>}
+<function-call> ::= 
+    <identifier> '(' [<expression-list>] ')'
+<expression-list> ::= 
+    <expression>{','<expression>}

@@ -663,7 +663,7 @@ public class SyntaxAnalysis {
 					}
 					// 函数语句语法错误
 					else {
-						Err.error(ErrEnum.FUNC_STATMENT_ERR);
+						Err.error(ErrEnum.FUNC_STATEMENT_ERR);
 						return -2;
 					}
 				}
@@ -839,7 +839,7 @@ public class SyntaxAnalysis {
 				}
 			}
 			if (analyseStatementSeq(no) != 1) {
-				Err.error(ErrEnum.FUNC_STATMENT_ERR);
+				Err.error(ErrEnum.FUNC_STATEMENT_ERR);
 				return -2;
 			}
 			token = getToken();
@@ -885,7 +885,7 @@ public class SyntaxAnalysis {
 		}
 		if (token.getType() == TokenType.LLB) {
 			if (analyseStatementSeq(no) != 1) {
-				Err.error(ErrEnum.FUNC_STATMENT_ERR);
+				Err.error(ErrEnum.FUNC_STATEMENT_ERR);
 				return -2;
 			}
 			token = getToken();
@@ -932,7 +932,7 @@ public class SyntaxAnalysis {
 					}
 					return 1;
 				}
-				Err.error(ErrEnum.FUNC_STATMENT_ERR);
+				Err.error(ErrEnum.FUNC_STATEMENT_ERR);
 				return -2;
 			}
 			// 其余均用变量来解释
@@ -949,7 +949,7 @@ public class SyntaxAnalysis {
 					}
 					return 1;
 				}
-				Err.error(ErrEnum.FUNC_STATMENT_ERR);
+				Err.error(ErrEnum.FUNC_STATEMENT_ERR);
 				return -2;
 			}
 		}
@@ -989,7 +989,7 @@ public class SyntaxAnalysis {
 			}
 			// <condition>
 			if (analyseCondition(no, JMP) != 1) {
-				Err.error(ErrEnum.FUNC_STATMENT_ERR);
+				Err.error(ErrEnum.FUNC_STATEMENT_ERR);
 				return -2;
 			}
 			// ')'
@@ -1004,7 +1004,7 @@ public class SyntaxAnalysis {
 			}
 			// <statement> stm1
 			if (analyseStatement(no) != 1) {
-				Err.error(ErrEnum.FUNC_STATMENT_ERR);
+				Err.error(ErrEnum.FUNC_STATEMENT_ERR);
 				return -2;
 			}
 			token = getToken();
@@ -1035,7 +1035,7 @@ public class SyntaxAnalysis {
 			JMP.label = text.getIndex();
 			// <statement> stm2
 			if (analyseStatement(no) != 1) {
-				Err.error(ErrEnum.FUNC_STATMENT_ERR);
+				Err.error(ErrEnum.FUNC_STATEMENT_ERR);
 				return -2;
 			}
 			// 求label2的位置
@@ -1059,7 +1059,7 @@ public class SyntaxAnalysis {
 			if (type == TokenType.L || type == TokenType.LE || type == TokenType.G || type == TokenType.GE
 					|| type == TokenType.UE || type == TokenType.EE) {
 				if (analyseExpression(no) != 1) {
-					Err.error(ErrEnum.FUNC_STATMENT_ERR);
+					Err.error(ErrEnum.FUNC_STATEMENT_ERR);
 					return -2;
 				}
 				text.addCode("isub", "", "");
@@ -1125,7 +1125,7 @@ public class SyntaxAnalysis {
 			// 记录label2固定跳转
 			LABEL2.label = text.getIndex() + 1;
 			if (analyseCondition(no, JMP) != 1) {
-				Err.error(ErrEnum.FUNC_STATMENT_ERR);
+				Err.error(ErrEnum.FUNC_STATEMENT_ERR);
 				return -2;
 			}
 			// )
@@ -1139,7 +1139,7 @@ public class SyntaxAnalysis {
 				return -2;
 			}
 			if (analyseStatement(no) != 1) {
-				Err.error(ErrEnum.FUNC_STATMENT_ERR);
+				Err.error(ErrEnum.FUNC_STATEMENT_ERR);
 				return -2;
 			}
 			text.addCode("jmp", new Integer(LABEL2.label).toString(), "");
@@ -1231,7 +1231,7 @@ public class SyntaxAnalysis {
 		// 含有表达式
 		reToken();
 		if (analysePrintableList(no) != 1) {
-			Err.error(ErrEnum.FUNC_STATMENT_ERR);
+			Err.error(ErrEnum.FUNC_STATEMENT_ERR);
 			return -2;
 		}
 		text.addCode("printl", "", "");
@@ -1272,7 +1272,7 @@ public class SyntaxAnalysis {
 				text.addCode("bipush", "32", "");
 				text.addCode("cprint", "", "");
 				if (analysePrintable(no) != 1) {
-					Err.error(ErrEnum.FUNC_STATMENT_ERR);
+					Err.error(ErrEnum.FUNC_STATEMENT_ERR);
 					return -2;
 				}
 			}
@@ -1415,7 +1415,7 @@ public class SyntaxAnalysis {
 		}
 		// <expression>
 		if (analyseExpression(no) != 1) {
-			Err.error(ErrEnum.FUNC_STATMENT_ERR);
+			Err.error(ErrEnum.FUNC_STATEMENT_ERR);
 			return -2;
 		}
 		// 解析完表达式，值已经被压栈了
@@ -1481,7 +1481,7 @@ public class SyntaxAnalysis {
 				// 调用者提供的参数置零
 				callParaNum = 0;
 				if (analyseExpressionList(no) != 1) {
-					Err.error(ErrEnum.FUNC_STATMENT_ERR);
+					Err.error(ErrEnum.FUNC_STATEMENT_ERR);
 					return -2;
 				}
 				// 检查参数个数是否对应
@@ -1529,7 +1529,7 @@ public class SyntaxAnalysis {
 					return 1;
 				}
 				if (analyseExpression(no) != 1) {
-					Err.error(ErrEnum.FUNC_STATMENT_ERR);
+					Err.error(ErrEnum.FUNC_STATEMENT_ERR);
 					return -2;
 				}
 				callParaNum++;

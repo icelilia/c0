@@ -118,7 +118,7 @@ public class LexicalAnalysis {
 							if (isHex(ch)) {
 								curruntState = DFAState.HEX_INT_STATE;
 							} else {
-								Err.error(ErrEnum.INPUT_ERR);
+								Err.error(ErrEnum.HEX_INT_ERR);
 							}
 						} else {
 							rechar();
@@ -394,6 +394,45 @@ public class LexicalAnalysis {
 				return 1;
 			}
 			case DIV_STATE: {
+				// multi line
+				if (ch == '*') {
+					char oldCh = getchar();
+					ch = getchar();
+					if (isEOF(ch) || isEOF(oldCh)) {
+						Err.error(ErrEnum.COMMENT_ERR);
+					}
+
+					while (true) {
+						if (oldCh == '*' && ch == '/') {
+							isComment = true;
+							tokenString = "";
+							curruntState = DFAState.INIT_STATE;
+							break;
+						}
+						if (isEOF(oldCh) || isEOF(ch)) {
+							Err.error(ErrEnum.COMMENT_ERR);
+						}
+						oldCh = ch;
+						ch = getchar();
+					}
+
+				}
+				// single line
+				else if (ch == '/') {
+					while (true) {
+						ch = getchar();
+						if (isCR(ch) || isLF(ch)) {
+							isComment = true;
+							tokenString = "";
+							curruntState = DFAState.INIT_STATE;
+							break;
+						}
+					}
+				}
+				if (isComment == true) {
+					isComment = false;
+					break;
+				}
 				token = new Token(TokenType.DIV, tokenString);
 				if ((isSpace(ch) || isTab(ch) || isLF(ch) || isCR(ch))) {
 					return 1;
