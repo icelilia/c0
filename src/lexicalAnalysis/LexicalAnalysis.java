@@ -396,31 +396,36 @@ public class LexicalAnalysis {
 			case DIV_STATE: {
 				// multi line
 				if (ch == '*') {
-					char oldCh = getchar();
-					ch = getchar();
-					if (isEOF(ch) || isEOF(oldCh)) {
-						Err.error(ErrEnum.COMMENT_ERR);
-					}
-
 					while (true) {
-						if (oldCh == '*' && ch == '/') {
-							isComment = true;
-							tokenString = "";
-							curruntState = DFAState.INIT_STATE;
-							break;
-						}
-						if (isEOF(oldCh) || isEOF(ch)) {
-							Err.error(ErrEnum.COMMENT_ERR);
-						}
-						oldCh = ch;
 						ch = getchar();
+						if (isEOF(ch)) {
+							Err.error(ErrEnum.EOF_ERR);
+						}
+						if (ch == '*') {
+							ch = getchar();
+							if (isEOF(ch)) {
+								Err.error(ErrEnum.EOF_ERR);
+							}
+							if (ch == '/') {
+								isComment = true;
+								tokenString = "";
+								curruntState = DFAState.INIT_STATE;
+								break;
+							}
+							rechar();
+						}
 					}
-
 				}
 				// single line
 				else if (ch == '/') {
 					while (true) {
 						ch = getchar();
+						if (isEOF(ch)) {
+							isComment = true;
+							tokenString = "";
+							curruntState = DFAState.INIT_STATE;
+							break;
+						}
 						if (isCR(ch) || isLF(ch)) {
 							isComment = true;
 							tokenString = "";

@@ -268,8 +268,71 @@ public class Main {
 		try {
 			out.writeShort(instructionsCount);
 			ArrayList<Code> codeList = funcList.get(0).text.getCodesList();
+			Code code;
 			for (int i = 0; i < instructionsCount; i++) {
-				out.write(codeList.get(i).toHexSeq());
+				code = codeList.get(i);
+				if (code.opcode.contentEquals("bipush")) {
+					out.write(0x01);
+					out.write(Integer.parseInt(code.operands1));
+				} else if (code.opcode.contentEquals("ipush")) {
+					out.write(0x02);
+					out.writeInt(Integer.parseInt(code.operands1));
+				} else if (code.opcode.contentEquals("loadc")) {
+					out.write(0x09);
+					out.writeShort(Integer.parseInt(code.operands1));
+				} else if (code.opcode.contentEquals("loada")) {
+					out.write(0x0a);
+					out.writeShort(Integer.parseInt(code.operands1));
+					out.writeInt(Integer.parseInt(code.operands2));
+				} else if (code.opcode.contentEquals("iload")) {
+					out.write(0x10);
+				} else if (code.opcode.contentEquals("istore")) {
+					out.write(0x20);
+				} else if (code.opcode.contentEquals("iadd")) {
+					out.write(0x30);
+				} else if (code.opcode.contentEquals("isub")) {
+					out.write(0x34);
+				} else if (code.opcode.contentEquals("imul")) {
+					out.write(0x38);
+				} else if (code.opcode.contentEquals("idiv")) {
+					out.write(0x3c);
+				} else if (code.opcode.contentEquals("jmp")) {
+					out.write(0x70);
+					out.writeShort(Integer.parseInt(code.operands1));
+				} else if (code.opcode.contentEquals("je")) {
+					out.write(0x71);
+					out.writeShort(Integer.parseInt(code.operands1));
+				} else if (code.opcode.contentEquals("jne")) {
+					out.write(0x72);
+					out.writeShort(Integer.parseInt(code.operands1));
+				} else if (code.opcode.contentEquals("jl")) {
+					out.write(0x73);
+					out.writeShort(Integer.parseInt(code.operands1));
+				} else if (code.opcode.contentEquals("jge")) {
+					out.write(0x74);
+					out.writeShort(Integer.parseInt(code.operands1));
+				} else if (code.opcode.contentEquals("jg")) {
+					out.write(0x75);
+					out.writeShort(Integer.parseInt(code.operands1));
+				} else if (code.opcode.contentEquals("jle")) {
+					out.write(0x76);
+					out.writeShort(Integer.parseInt(code.operands1));
+				} else if (code.opcode.contentEquals("call")) {
+					out.write(0x80);
+					out.writeShort(Integer.parseInt(code.operands1));
+				} else if (code.opcode.contentEquals("ret")) {
+					out.write(0x88);
+				} else if (code.opcode.contentEquals("iret")) {
+					out.write(0x89);
+				} else if (code.opcode.contentEquals("iprint")) {
+					out.write(0xa0);
+				} else if (code.opcode.contentEquals("cprint")) {
+					out.write(0xa2);
+				} else if (code.opcode.contentEquals("printl")) {
+					out.write(0xaf);
+				} else if (code.opcode.contentEquals("iscan")) {
+					out.write(0xb0);
+				}
 			}
 		} catch (IOException e) {
 			Err.error(ErrEnum.OUTPUT_ERR);
@@ -288,8 +351,71 @@ public class Main {
 				out.writeShort(1);
 				ArrayList<Code> codeList = funcList.get(i).text.getCodesList();
 				out.writeShort(codeList.size());
+				Code code;
 				for (int j = 0; j < codeList.size(); j++) {
-					out.write(codeList.get(j).toHexSeq());
+					code = codeList.get(j);
+					if (code.opcode.contentEquals("bipush")) {
+						out.write(0x01);
+						out.write(Integer.parseInt(code.operands1));
+					} else if (code.opcode.contentEquals("ipush")) {
+						out.write(0x02);
+						out.writeInt(Integer.parseInt(code.operands1));
+					} else if (code.opcode.contentEquals("loadc")) {
+						out.write(0x09);
+						out.writeShort(Integer.parseInt(code.operands1));
+					} else if (code.opcode.contentEquals("loada")) {
+						out.write(0x0a);
+						out.writeShort(Integer.parseInt(code.operands1));
+						out.writeInt(Integer.parseInt(code.operands2));
+					} else if (code.opcode.contentEquals("iload")) {
+						out.write(0x10);
+					} else if (code.opcode.contentEquals("istore")) {
+						out.write(0x20);
+					} else if (code.opcode.contentEquals("iadd")) {
+						out.write(0x30);
+					} else if (code.opcode.contentEquals("isub")) {
+						out.write(0x34);
+					} else if (code.opcode.contentEquals("imul")) {
+						out.write(0x38);
+					} else if (code.opcode.contentEquals("idiv")) {
+						out.write(0x3c);
+					} else if (code.opcode.contentEquals("jmp")) {
+						out.write(0x70);
+						out.writeShort(Integer.parseInt(code.operands1));
+					} else if (code.opcode.contentEquals("je")) {
+						out.write(0x71);
+						out.writeShort(Integer.parseInt(code.operands1));
+					} else if (code.opcode.contentEquals("jne")) {
+						out.write(0x72);
+						out.writeShort(Integer.parseInt(code.operands1));
+					} else if (code.opcode.contentEquals("jl")) {
+						out.write(0x73);
+						out.writeShort(Integer.parseInt(code.operands1));
+					} else if (code.opcode.contentEquals("jge")) {
+						out.write(0x74);
+						out.writeShort(Integer.parseInt(code.operands1));
+					} else if (code.opcode.contentEquals("jg")) {
+						out.write(0x75);
+						out.writeShort(Integer.parseInt(code.operands1));
+					} else if (code.opcode.contentEquals("jle")) {
+						out.write(0x76);
+						out.writeShort(Integer.parseInt(code.operands1));
+					} else if (code.opcode.contentEquals("call")) {
+						out.write(0x80);
+						out.writeShort(Integer.parseInt(code.operands1));
+					} else if (code.opcode.contentEquals("ret")) {
+						out.write(0x88);
+					} else if (code.opcode.contentEquals("iret")) {
+						out.write(0x89);
+					} else if (code.opcode.contentEquals("iprint")) {
+						out.write(0xa0);
+					} else if (code.opcode.contentEquals("cprint")) {
+						out.write(0xa2);
+					} else if (code.opcode.contentEquals("printl")) {
+						out.write(0xaf);
+					} else if (code.opcode.contentEquals("iscan")) {
+						out.write(0xb0);
+					}
 				}
 			}
 		} catch (Exception e) {

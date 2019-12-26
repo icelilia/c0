@@ -554,44 +554,65 @@ public class SyntaxAnalysis {
 		}
 		// <identifier>
 		else if (token.getType() == TokenType.ID) {
-			String name = token.getValue();
-			Integer res = table.getKind(name, no);
-			// 不存在
-			if (res == null) {
-				Err.error(ErrEnum.ID_UNDECL_ERR);
+			// 这里进来之后不能确定是函数调用还是变量引用
+			// 预读
+			token = getToken();
+			if (token == null) {
+				Err.error(ErrEnum.EOF_ERR);
 				return -2;
 			}
-			// 未初始化
-			if (res == -1) {
-				Err.error(ErrEnum.VAR_UNINIT_ERR);
+			// 函数调用
+			if (token.getType() == TokenType.LSB) {
+				reToken();
+				reToken();
+				// 函数调用
+				int res = analyseFunctionCall(no);
+				// 表达式中使用返回值为空的函数调用
+				if (res == 1) {
+					Err.error(ErrEnum.VOID_FUNC_CALL_ERR);
+					return -2;
+				} else if (res == 2) {
+					return 1;
+				}
+				Err.error(ErrEnum.SP_ERR);
 				return -2;
 			}
-			// 获得栈偏移
-			Offset off = table.getOffset(name, no);
-
-			// level = 1
-			if (off.no == 0 && no != 0) {
-				text.addCode("loada", "1", off.offset.toString());
-			}
-			// level = 0
+			// 其余按变量引用处理
 			else {
-				text.addCode("loada", "0", off.offset.toString());
+				reToken();
+				reToken();
+				token = getToken();
+				String name = token.getValue();
+				Integer res = table.getKind(name, no);
+				// 不存在
+				if (res == null) {
+					// 这里不应该进行出错处理
+					Err.error(ErrEnum.ID_UNDECL_ERR);
+					return -2;
+				}
+				// 未初始化
+				if (res == -1) {
+					Err.error(ErrEnum.VAR_UNINIT_ERR);
+					return -2;
+				}
+				// 获得栈偏移
+				Offset off = table.getOffset(name, no);
+
+				// level = 1
+				if (off.no == 0 && no != 0) {
+					text.addCode("loada", "1", off.offset.toString());
+				}
+				// level = 0
+				else {
+					text.addCode("loada", "0", off.offset.toString());
+				}
+				text.addCode("iload", "", "");
+				return 1;
 			}
-			text.addCode("iload", "", "");
-			return 1;
 		}
 		// <integer-literal>
 		else if (token.getType() == TokenType.DEC_INT) {
 			text.addCode("ipush", token.getValue(), "");
-			return 1;
-		}
-		// 函数调用
-		int res = analyseFunctionCall(no);
-		// 表达式中使用返回值为空的函数调用
-		if (res == 1) {
-			Err.error(ErrEnum.VOID_FUNC_CALL_ERR);
-			return -2;
-		} else if (res == 2) {
 			return 1;
 		}
 		// 头符号集不匹配
