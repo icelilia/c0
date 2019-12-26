@@ -1367,6 +1367,10 @@ public class SyntaxAnalysis {
 		text.addCode("iscan", "", "");
 		// 最后store
 		text.addCode("istore", "", "");
+		// 如果是未初始化的变量，则更改状态
+		if (res == -1) {
+			table.getBlock(off.no).change(name);
+		}
 		return 1;
 	}
 
