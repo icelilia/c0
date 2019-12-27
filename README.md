@@ -16,3 +16,15 @@
 + 2019-12-25 下午，完成-o输出，Beta版
 + 2019-12-25 晚上，添加注释处理
 + 2019-12-26 晚上，通过最终检测
+## 编译
++ 命令行（当前目录为项目根目录，编译产物在 /out 中）：
+    ```
+    find src -name \*.java > javaFiles.txt
+    javac -encoding GBK -d out -cp . @javaFiles.txt
+    ```
+## 运行
++ 命令行（当前目录为项目根目录，以 -h 参数示例）：
+    ```
+    cd out
+    java main.Main -h
+    ```
